@@ -42,7 +42,7 @@ process "masking" {
 
     script:
     """
-    change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-g " : ""}${bam} ${type}.bam
+    change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam
     """
 }
 
