@@ -77,12 +77,15 @@ bam_path = "${params.input}/*/*.bam"
 
 // conditionals for setting --clusters and --variants
 if( !params.clusters ){
+
     variants = true
     clusters = false
 } else if( params.variants ){
+
     variants = true
     clusters = true
 } else {
+
     variants = false
     clusters = true
 }
@@ -157,8 +160,6 @@ workflow 'SNPS' {
         BAM
         fasta
         fai
-        variants
-        clusters
  
     main:
         // samtools sort + index
@@ -209,7 +210,7 @@ workflow 'SNPS' {
 workflow {
 
     main:
-        SNPS(BAM, fasta, fai, variants, clusters)
+        SNPS(BAM, fasta, fai)
 
     publish:
         SNPS.out.khmer_publish to: "${params.output}/hashes", mode: 'copy'

@@ -63,7 +63,7 @@ process "extracting" {
     // eg. [sample, /path/to/sample.fastq.gz]
 
     when:
-    clusters
+    params.clusters
 
     script:
     """
@@ -89,7 +89,7 @@ process "khmer" {
     // eg. [sample, /path/to/sample.ct.gz]
 
     when:
-    clusters
+    params.clusters
 
     script:
     """
@@ -113,7 +113,7 @@ process "kwip" {
     // eg. [sample, /path/to/sample.ct.gz]
 
     when:
-    clusters
+    params.clusters
 
     script:
     """
@@ -136,7 +136,7 @@ process "clustering" {
     path "*.pdf"
 
     when:
-    clusters
+    params.clusters
 
     script:
     """
@@ -162,7 +162,7 @@ process "sorting" {
     // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -189,7 +189,7 @@ process "freebayes" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -216,7 +216,7 @@ process "freebayes_parallel" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -242,7 +242,7 @@ process "bcftools" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -266,7 +266,7 @@ process "extractHAIRS" {
     // eg. [sample, /path/to/sample.txt]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -290,7 +290,7 @@ process "HAPCUT2" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -315,7 +315,7 @@ process "bamsplit" {
     // eg. [sample, [/path/to/*.bam, ...]]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
@@ -344,7 +344,7 @@ process "MethylDackel" {
     // eg. [sample, [/path/to/logs/*, ...]]
 
     when:
-    variants
+    params.variants || !params.clusters
 
     script:
     """
