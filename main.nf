@@ -162,7 +162,7 @@ workflow 'SNPS' {
  
     main:
         // samtools sort + index
-        preprocessing(BAM)
+        preprocessing(BAM, fasta)
 
         // fork preprocessing.out for clustering and variant calling workflows
         cluster_channel = clusters ? preprocessing.out.map{tuple("clustering", *it)} : Channel.empty()
