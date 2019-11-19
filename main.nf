@@ -140,9 +140,6 @@ if ( workflow.profile.tokenize(",").contains("test") ){
 
 }
 
-// STAGE FINAL INPUT CHANNEL
-input_channel = cluster_channel.mix(variant_channel)
-
 
 ////////////////////
 // BEGIN PIPELINE //
