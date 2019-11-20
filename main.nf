@@ -175,7 +175,7 @@ workflow 'SNPS' {
         // clustering workflow
         extracting(masking.out.filter{ it[0] == "clustering" })
         khmer(extracting.out)
-        kwip(khmer.out.toList())
+        kwip(khmer.out.collect{ it[0] }.mix(khmer.out.collect{ it[1] }).toList())
         clustering(kwip.out)
 
         // variant calling workflow
