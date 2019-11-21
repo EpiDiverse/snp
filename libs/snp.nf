@@ -183,32 +183,6 @@ process "freebayes" {
     tuple sample, path(bam), path(bai)
     // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai]
     path fasta
-
-    output:
-    tuple sample, path("${sample}.vcf")
-    // eg. [sample, /path/to/sample.vcf]
-
-    when:
-    params.variants || !params.clusters
-
-    script:
-    """
-    freebayes -f ${fasta} ${bam} > ${sample}.vcf
-    """
-}
-
-
-// variant calling on bisulfite-masked samples
-process "freebayes_parallel" {
-
-    label "low"
-    label "finish"
-    tag "$sample"
-
-    input:
-    tuple sample, path(bam), path(bai)
-    // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai]
-    path fasta
     path fai
 
     output:

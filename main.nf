@@ -180,11 +180,8 @@ workflow 'SNPS' {
 
         // variant calling workflow
         sorting(masking.out.filter{ it[0] == "variants" })
-        freebayes_parallel(sorting.out, fasta, fai)
-        bcftools(freebayes_parallel.out)
-
-        //freebayes(sorting.out)
-        //bcftools(freebayes.out)
+        freebayes(sorting.out, fasta, fai)
+        bcftools(freebayes.out)
 
         // haplotyping workflow
         //extractHAIRS(sorting.out.combine(freebayes.out, by: 0))
