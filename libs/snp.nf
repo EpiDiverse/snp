@@ -85,8 +85,8 @@ process "khmer" {
     // eg. [sample, /path/to/sample.fastq.gz]
 
     output:
-    tuple sample, path("${sample}.ct.gz")
-    // eg. [sample, /path/to/sample.ct.gz]
+    path "${sample}.ct.gz"
+    // eg. [/path/to/sample.ct.gz]
 
     when:
     params.clusters
@@ -105,12 +105,12 @@ process "kwip" {
     label "finish"
 
     input:
-    tuple samples, path(hashes)
-    // eg. [sample, /path/to/sample.fastq.gz]
+    path(hashes)
+    // eg. [/path/to/sample_1.ct.gz, ... /path/to/sample_n.ct.gz]
 
     output:
     tuple path("kern.txt"), path("dist.txt")
-    // eg. [sample, /path/to/sample.ct.gz]
+    // eg. [/path/to/kern.txt, /path/to/dist.txt]
 
     when:
     params.clusters
