@@ -194,8 +194,7 @@ workflow 'SNPS' {
         khmer_publish = khmer.out
         kwip_publish = kwip.out
         clustering_publish = clustering.out
-        vcf_unphased = freebayes_parallel.out
-        //vcf_unphased = freebayes.out
+        vcf_unphased = freebayes.out
         vcf_filtered = bcftools.out
         //vcf_phased = HAPCUT2.out
         //bam_haplotypes = bamsplit.out
