@@ -8,6 +8,8 @@ process "preprocessing" {
     label "finish"
     tag "$sample"
 
+    maxForks "${params.fork}".toInteger()
+
     input:
     tuple sample, path(bam)
     // eg. [sample, /path/to/sample.bam]
@@ -32,6 +34,8 @@ process "masking" {
     label "finish"
     tag "$sample - $type"
 
+    maxForks "${params.fork}".toInteger()
+
     input:
     tuple type, sample, path(bam), path(bai)
     // eg. [clustering, sample, /path/to/sample.bam, /path/to/sample.bam.bai]
@@ -53,6 +57,8 @@ process "extracting" {
     label "low"
     label "finish"
     tag "$sample"
+
+    maxForks "${params.fork}".toInteger()
 
     input:
     tuple type, sample, path(bam)
@@ -79,6 +85,8 @@ process "khmer" {
     label "low"
     label "finish"
     tag "$sample"
+
+    maxForks "${params.fork}".toInteger()
 
     input:
     tuple sample, path(fastq)
@@ -153,6 +161,8 @@ process "sorting" {
     label "finish"
     tag "$sample"
 
+    maxForks "${params.fork}".toInteger()
+
     input:
     tuple type, sample, path(bam)
     // eg. [variant, sample, /path/to/sample.bam]
@@ -179,6 +189,8 @@ process "freebayes" {
     label "finish"
     tag "$sample"
 
+    maxForks "${params.fork}".toInteger()
+
     input:
     tuple sample, path(bam), path(bai)
     // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai]
@@ -201,7 +213,7 @@ process "freebayes" {
 
 
 
-// filtering of 
+// filtering of variants
 process "bcftools" {
 
     label "low"
@@ -212,15 +224,40 @@ process "bcftools" {
     // eg. [sample, /path/to/raw.vcf]
 
     output:
-    tuple sample, path("${sample}.vcf")
-    // eg. [sample, /path/to/sample.vcf]
+    tuple sample, path("${sample}.bcf")
+    // eg. [sample, /path/to/sample.bcf]
 
     when:
     params.variants || !params.clusters
 
     script:
     """
-    bcftools view --max-alleles 2 raw.vcf > ${sample}.vcf
+    bcftools view -Ob${params.ploidy ? "--max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
+    """
+}
+
+
+// filtering of variants
+process "plot_vcfstats" {
+
+    label "low"
+    tag "$sample"
+
+    input:
+    tuple sample, path(bcf)
+    // eg. [sample, /path/to/sample.bcf]
+
+    output:
+    path "${sample}/stats"
+
+    when:
+    params.variants || !params.clusters
+
+    script:
+    """
+    mkdir ${sample} ${sample}/stats
+    bcftools stats ${bcf} > ${sample}/stats/${sample}.stats || exit \$?
+    plot-bamstats -P -p ${sample}/stats/ ${sample}/stats/${sample}.stats
     """
 }
 

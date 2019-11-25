@@ -100,13 +100,16 @@ def main(BAM,OUT,GENOMIC,QUALITY,THREADS=1,TEMP=None,FASTA=None):
     # Open initial BAM file instance to parse reference contigs
     with pysam.AlignmentFile(BAM, "rb") as original:
 
+		header = original.header.to_dict()
+		if "CO" in header: del header["CO"]
+
         for ref in original.get_index_statistics():
 
             # Fire off workers to process reads for each scaffold 'ref' from 'BAM'
             if ref.mapped > 0:
                 if genome: reference = genome[ref.contig]
                 else: reference = None
-                job = pool.apply_async(worker, (BAM, TDIR, ref.contig, reference, GENOMIC, QUALITY))
+                job = pool.apply_async(worker, (BAM, TDIR, header, ref.contig, reference, GENOMIC, QUALITY))
                 jobs.append(job)
 
 
@@ -338,11 +341,12 @@ def mask_bisulfite(reference,qseq,qual,pairs,CT):
 
 
 ####### Function for READING the input reads, modifying, and sending them to 'q'
-def worker(BAM,TDIR,ref,reference,GENOMIC,QUALITY):
+def worker(BAM,TDIR,header,ref,reference,GENOMIC,QUALITY):
 
 	######################################################################################################
     ## BAM = path to input bam file eg. "/path/to/input.bam"                                            ##
     ## TDIR = path to temp dir for processed bam files eg. "/var/tmp/adfas7d"                           ##
+    ## header = dictionary object containing the SAM header for writing                                 ##
     ## ref = current scaffold or chromosome reference eg. "Chr1"                                        ##
 	## reference = dictionary[key] result of build_genome(), or None                                    ##
 	## GENOMIC = boolean decision whether to mask genomic or bisulfite eg. True or False                ##
@@ -353,7 +357,7 @@ def worker(BAM,TDIR,ref,reference,GENOMIC,QUALITY):
     name = TDIR + "/" + ref + ".bam"
 
     # Open pysam.AlignmentFile objects for reading and writing
-    with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=original.header) as modified:
+    with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=header) as modified:
 
         # define global count variables
         rcount, count = 0, 0

@@ -140,6 +140,7 @@ if ( workflow.profile.tokenize(",").contains("test") ){
     BAM = Channel.fromFilePairs(bam_path, size: 1)
         .ifEmpty{ exit 1, "ERROR: cannot find valid *.bam files in dir: ${params.input}\n"}
         .map{it.flatten()}
+        .take(params.take.toInteger())
 
 }
 
