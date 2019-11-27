@@ -344,67 +344,67 @@ def mask_bisulfite(reference,qseq,qual,pairs,CT):
 def worker(BAM,TDIR,header,ref,reference,GENOMIC,QUALITY):
 
 	######################################################################################################
-    ## BAM = path to input bam file eg. "/path/to/input.bam"                                            ##
-    ## TDIR = path to temp dir for processed bam files eg. "/var/tmp/adfas7d"                           ##
-    ## header = dictionary object containing the SAM header for writing                                 ##
-    ## ref = current scaffold or chromosome reference eg. "Chr1"                                        ##
+	## BAM = path to input bam file eg. "/path/to/input.bam"                                            ##
+	## TDIR = path to temp dir for processed bam files eg. "/var/tmp/adfas7d"                           ##
+	## header = dictionary object containing the SAM header for writing                                 ##
+	## ref = current scaffold or chromosome reference eg. "Chr1"                                        ##
 	## reference = dictionary[key] result of build_genome(), or None                                    ##
 	## GENOMIC = boolean decision whether to mask genomic or bisulfite eg. True or False                ##
 	## QUALITY = boolean decision whether to mask base nucleotides or base qualities eg. True or False  ##
 	######################################################################################################
 
-    # generate a name for the modified bam file
-    name = TDIR + "/" + ref + ".bam"
+	# generate a name for the modified bam file
+	name = TDIR + "/" + ref + ".bam"
 
-    # Open pysam.AlignmentFile objects for reading and writing
-    with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=header) as modified:
+	# Open pysam.AlignmentFile objects for reading and writing
+	with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=header) as modified:
 
-        # define global count variables
-        rcount, count = 0, 0
+		# define global count variables
+		rcount, count = 0, 0
 
-        # iterate over each alignment from 'original'
-        for alignment in original.fetch(ref):
-            rcount += 1
+		# iterate over each alignment from 'original'
+		for alignment in original.fetch(ref):
+			rcount += 1
 
-            # filter out unmapped, secondary alignments, or qcfailed alignments
-            if (alignment.is_unmapped) or (alignment.is_secondary) or (alignment.is_qcfail): continue
+			# filter out unmapped, secondary alignments, or qcfailed alignments
+			if (alignment.is_unmapped) or (alignment.is_secondary) or (alignment.is_qcfail): continue
 			if (alignment.query_alignment_length == 0): continue
 
-            # get alignment variables
-            qseq = alignment.query_sequence
-            qual = alignment.query_qualities
+			# get alignment variables
+			qseq = alignment.query_sequence
+			qual = alignment.query_qualities
 
-            # skip erroneous reads
-            if (qseq == None) or (qual == None): continue
+			# skip erroneous reads
+			if (qseq == None) or (qual == None): continue
 
-            # determine whether to read CT mismatches or GA mismatches
-            CT = bool((alignment.is_read1 and not alignment.is_reverse) or (alignment.is_read2 and alignment.is_reverse))
+			# determine whether to read CT mismatches or GA mismatches
+			CT = bool((alignment.is_read1 and not alignment.is_reverse) or (alignment.is_read2 and alignment.is_reverse))
 
-            # get aligned pairs, with sequence from either genome (if given) or MD-tag
-            pairs, MD = get_aligned_pairs_with_sequence(alignment,reference)
+			# get aligned pairs, with sequence from either genome (if given) or MD-tag
+			pairs, MD = get_aligned_pairs_with_sequence(alignment,reference)
 
-            # evaluate MD tag
-            if MD:
-                try: count = validate_MD(qseq,MD,CT,count)
-                except (UnboundLocalError): pass
-            
-            # determine whether to mask genomic info info
-            if GENOMIC:
-                new = mask_genomic(reference,qseq,qual,pairs,CT)
-                alignment.query_sequence = new[0]
-                alignment.query_qualities = new[1]
-                alignment.cigartuples = new[2]
+			# evaluate MD tag
+			if MD:
+				try: count = validate_MD(qseq,MD,CT,count)
+				except (UnboundLocalError): pass
+			
+			# determine whether to mask genomic info info
+			if GENOMIC:
+				new = mask_genomic(reference,qseq,qual,pairs,CT)
+				alignment.query_sequence = new[0]
+				alignment.query_qualities = new[1]
+				alignment.cigartuples = new[2]
 
-            else:
-                new = mask_bisulfite(reference,qseq,qual,pairs,CT)
-                if QUALITY: alignment.query_qualities = new[1]
-                else: alignment.query_sequence = new[0]
+			else:
+				new = mask_bisulfite(reference,qseq,qual,pairs,CT)
+				if QUALITY: alignment.query_qualities = new[1]
+				else: alignment.query_sequence = new[0]
 
-            # write read to 'modified' file
-            modified.write(alignment)
+			# write read to 'modified' file
+			modified.write(alignment)
 
-    # return the filename path
-    return name, rcount, count
+	# return the filename path
+	return name, rcount, count
 
 
 
