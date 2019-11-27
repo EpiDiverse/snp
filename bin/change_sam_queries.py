@@ -368,6 +368,7 @@ def worker(BAM,TDIR,header,ref,reference,GENOMIC,QUALITY):
 
             # filter out unmapped, secondary alignments, or qcfailed alignments
             if (alignment.is_unmapped) or (alignment.is_secondary) or (alignment.is_qcfail): continue
+			if (alignment.query_alignment_length == 0): continue
 
             # get alignment variables
             qseq = alignment.query_sequence
