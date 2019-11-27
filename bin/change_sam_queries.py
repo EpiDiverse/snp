@@ -73,62 +73,62 @@ from array import array
 ## DEFINE __MAIN__
 def main(BAM,OUT,GENOMIC,QUALITY,THREADS=1,TEMP=None,FASTA=None):
 
-    ######
-    # 1) DECLARE ENVIRONMENT
+	######
+	# 1) DECLARE ENVIRONMENT
 
-    # Build genome (if given)
-    try: genome = build_genome(FASTA)
-    except (TypeError):
-        genome = None
-        pass
+	# Build genome (if given)
+	try: genome = build_genome(FASTA)
+	except (TypeError):
+		genome = None
+		pass
 
-    # Build threads pool
-    pool = mp.Pool(int(THREADS))
-    jobs = []
+	# Build threads pool
+	pool = mp.Pool(int(THREADS))
+	jobs = []
 
-    # Determine open file limit
-    rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
-    rlimit = rlimit[0]
+	# Determine open file limit
+	rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
+	rlimit = rlimit[0]
 
-    # Define temp directory
-    TDIR = tempfile.mkdtemp(dir=TEMP)
+	# Define temp directory
+	TDIR = tempfile.mkdtemp(dir=TEMP)
 
 
-    ######
-    # 2) MODIFY ALIGNMENTS BASED ON USER CRITERIA
+	######
+	# 2) MODIFY ALIGNMENTS BASED ON USER CRITERIA
 
-    # Open initial BAM file instance to parse reference contigs
-    with pysam.AlignmentFile(BAM, "rb") as original:
+	# Open initial BAM file instance to parse reference contigs
+	with pysam.AlignmentFile(BAM, "rb") as original:
 
 		header = original.header.to_dict()
 		if "CO" in header: del header["CO"]
 
-        for ref in original.get_index_statistics():
+		for ref in original.get_index_statistics():
 
-            # Fire off workers to process reads for each scaffold 'ref' from 'BAM'
-            if ref.mapped > 0:
-                if genome: reference = genome[ref.contig]
-                else: reference = None
-                job = pool.apply_async(worker, (BAM, TDIR, header, ref.contig, reference, GENOMIC, QUALITY))
-                jobs.append(job)
+			# Fire off workers to process reads for each scaffold 'ref' from 'BAM'
+			if ref.mapped > 0:
+				if genome: reference = genome[ref.contig]
+				else: reference = None
+				job = pool.apply_async(worker, (BAM, TDIR, header, ref.contig, reference, GENOMIC, QUALITY))
+				jobs.append(job)
 
 
-    ######
-    # 3) MERGE OUTPUT FILES BASED ON OPEN FILE LIMIT
+	######
+	# 3) MERGE OUTPUT FILES BASED ON OPEN FILE LIMIT
 
-    # Merge results from the workers with a recursive merging function
-    bam = recursion(jobs,rlimit,pool,TDIR,bool(genome))
-    bam = bam[0].get()
-    os.replace(bam, OUT)
+	# Merge results from the workers with a recursive merging function
+	bam = recursion(jobs,rlimit,pool,TDIR,bool(genome))
+	bam = bam[0].get()
+	os.replace(bam, OUT)
 
-    # close the pool
-    pool.close()
-    pool.join()
+	# close the pool
+	pool.close()
+	pool.join()
 
-    ###################
-    # Goodbye message
-    print("\n----------------")
-    print("Success!\n")
+	###################
+	# Goodbye message
+	print("\n----------------")
+	print("Success!\n")
 
 
 ## END OF __MAIN__
