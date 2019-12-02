@@ -21,7 +21,8 @@ process "preprocessing" {
 
     script:
     """
-    samtools sort -o sorted.bam ${bam}
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -o sorted.bam ${bam} || exit \$?
     samtools calmd -b sorted.bam ${fasta} > calmd.bam
     samtools index calmd.bam
     """
@@ -73,7 +74,8 @@ process "extracting" {
 
     script:
     """
-    samtools sort -no sorted.bam ${bam}
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -no sorted.bam ${bam} || exit \$?
     samtools fastq sorted.bam > ${sample}.fastq.gz
     """
 }
@@ -176,7 +178,8 @@ process "sorting" {
 
     script:
     """
-    samtools sort -o sorted.bam ${bam}
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -o sorted.bam ${bam}
     samtools index sorted.bam
     """
 }
@@ -232,7 +235,7 @@ process "bcftools" {
 
     script:
     """
-    bcftools view -Ob${params.ploidy ? "--max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
+    bcftools view -Ob${params.ploidy ? " --max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
     """
 }
 
