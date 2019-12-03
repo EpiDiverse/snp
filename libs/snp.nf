@@ -4,7 +4,7 @@
 // taking input bam files for sorting and indexing
 process "preprocessing" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -32,7 +32,7 @@ process "preprocessing" {
 // mask genomic or epigenomic variation according to type
 process "masking" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample - $type"
 
@@ -56,7 +56,7 @@ process "masking" {
 // extract fastq reads from genomic-masked samples
 process "extracting" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -86,7 +86,7 @@ process "extracting" {
 // run khmer on extracted fastq reads from genomic-masked samples
 process "khmer" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -113,7 +113,7 @@ process "khmer" {
 // run kwip on collected khmer hash tables to get distance matrix
 process "kwip" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
 
     input:
@@ -161,7 +161,7 @@ process "clustering" {
 // sorting bam files from bisulfite-masked samples
 process "sorting" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -192,7 +192,7 @@ process "sorting" {
 // variant calling on bisulfite-masked samples
 process "freebayes" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -223,7 +223,7 @@ process "freebayes" {
 // filtering of variants
 process "bcftools" {
 
-    label "${params.high ? : "high" : "low"}"
+    label "${params.high ? "high" : "low"}"
     label "finish"
     tag "$sample"
 
