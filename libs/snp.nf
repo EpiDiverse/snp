@@ -4,7 +4,7 @@
 // taking input bam files for sorting and indexing
 process "preprocessing" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -32,6 +32,7 @@ process "preprocessing" {
 // mask genomic or epigenomic variation according to type
 process "masking" {
 
+    label "${params.high ? : "high" : "low"}"
     label "finish"
     tag "$sample - $type"
 
@@ -55,7 +56,7 @@ process "masking" {
 // extract fastq reads from genomic-masked samples
 process "extracting" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -68,6 +69,7 @@ process "extracting" {
     output:
     tuple sample, path("${sample}.fastq.gz")
     // eg. [sample, /path/to/sample.fastq.gz]
+    path "${sample}.bam"
 
     when:
     params.clusters
@@ -75,8 +77,8 @@ process "extracting" {
     script:
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-    -no sorted.bam ${bam} || exit \$?
-    samtools fastq sorted.bam > ${sample}.fastq.gz
+    -no ${sample}.bam ${bam} || exit \$?
+    samtools fastq ${sample}.bam > ${sample}.fastq.gz
     """
 }
 
@@ -84,7 +86,7 @@ process "extracting" {
 // run khmer on extracted fastq reads from genomic-masked samples
 process "khmer" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -111,7 +113,7 @@ process "khmer" {
 // run kwip on collected khmer hash tables to get distance matrix
 process "kwip" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
     label "finish"
 
     input:
@@ -159,7 +161,7 @@ process "clustering" {
 // sorting bam files from bisulfite-masked samples
 process "sorting" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -170,8 +172,10 @@ process "sorting" {
     // eg. [variant, sample, /path/to/sample.bam]
 
     output:
-    tuple sample, path("sorted.bam"), path("sorted.bam.bai")
-    // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai]
+    tuple sample, path("${sample}.bam"), path("${sample}.bam.bai")
+    // eg. [sample, /path/to/sample.bam, /path/to/sample.bam.bai]
+    path "${sample}.bam"
+
 
     when:
     params.variants || !params.clusters
@@ -179,8 +183,8 @@ process "sorting" {
     script:
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-    -o sorted.bam ${bam}
-    samtools index sorted.bam
+    -o ${sample}.bam ${bam}
+    samtools index ${sample}.bam
     """
 }
 
@@ -188,7 +192,7 @@ process "sorting" {
 // variant calling on bisulfite-masked samples
 process "freebayes" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
     label "finish"
     tag "$sample"
 
@@ -196,7 +200,7 @@ process "freebayes" {
 
     input:
     tuple sample, path(bam), path(bai)
-    // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai]
+    // eg. [sample, /path/to/sample.bam, /path/to/sample.bam.bai]
     path fasta
     path fai
 
@@ -219,7 +223,8 @@ process "freebayes" {
 // filtering of variants
 process "bcftools" {
 
-    label "low"
+    label "${params.high ? : "high" : "low"}"
+    label "finish"
     tag "$sample"
 
     input:
@@ -235,15 +240,17 @@ process "bcftools" {
 
     script:
     """
-    bcftools view -Ob${params.ploidy ? " --max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
+    #bcftools view -Ob${params.ploidy ? " --max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
+    bcftools view -Ob raw.vcf > ${sample}.bcf
     """
 }
 
 
-// filtering of variants
+// generate plots with plot-bamstats
 process "plot_vcfstats" {
 
     label "low"
+    label "ignore"
     tag "$sample"
 
     input:
@@ -258,9 +265,9 @@ process "plot_vcfstats" {
 
     script:
     """
-    mkdir ${sample} ${sample}/stats
-    bcftools stats ${bcf} > ${sample}/stats/${sample}.stats || exit \$?
-    plot-bamstats -P -p ${sample}/stats/ ${sample}/stats/${sample}.stats
+    mkdir ${sample}
+    bcftools stats ${bcf} > ${sample}/${sample}.stats || exit \$?
+    plot-vcfstats -P -p ${sample} ${sample}/${sample}.stats
     """
 }
 

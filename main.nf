@@ -175,14 +175,15 @@ workflow 'SNPS' {
 
         // clustering workflow
         extracting(masking.out.filter{ it[0] == "clustering" })
-        khmer(extracting.out)
+        khmer(extracting.out[0])
         kwip(khmer.out.collect())
         clustering(kwip.out)
 
         // variant calling workflow
         sorting(masking.out.filter{ it[0] == "variants" })
-        freebayes(sorting.out, fasta, fai)
+        freebayes(sorting.out[0], fasta, fai)
         bcftools(freebayes.out)
+        plot_vcfstats(bcftools.out)
 
         // haplotyping workflow
         //extractHAIRS(sorting.out.combine(freebayes.out, by: 0))
@@ -191,11 +192,15 @@ workflow 'SNPS' {
         //MethylDackel(bamsplit.out.transpose())
 
     emit:
+        bam_variants = sorting.out[1]
+        bam_clusters = extracting.out[1]
         khmer_publish = khmer.out
         kwip_publish = kwip.out
         clustering_publish = clustering.out
         vcf_unphased = freebayes.out
         vcf_filtered = bcftools.out
+        vcf_vcfstats = plot_vcfstats.out
+        
         //vcf_phased = HAPCUT2.out
         //bam_haplotypes = bamsplit.out
         //bedGraphs = MethylDackel.out
@@ -210,10 +215,13 @@ workflow {
         SNPS(BAM, fasta, fai)
 
     publish:
+        SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'copy'
+        SNPS.out.bam_clusters to: "${params.output}/bam/variants", mode: 'copy'
         SNPS.out.khmer_publish to: "${params.output}/hashes", mode: 'copy'
         SNPS.out.kwip_publish to: "${params.output}", mode: 'copy'
         SNPS.out.clustering_publish to: "${params.output}", mode: 'move'
         SNPS.out.vcf_unphased to: "${params.output}/vcf", mode: 'copy'
+        SNPS.out.vcf_vcfstats to: "${params.output}/stats", mode: 'move'
 
 }
 
