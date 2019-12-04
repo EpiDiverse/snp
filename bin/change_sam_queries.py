@@ -397,8 +397,12 @@ def worker(BAM,TDIR,header,ref,reference,GENOMIC,QUALITY):
 
 			else:
 				new = mask_bisulfite(reference,qseq,qual,pairs,CT)
-				if QUALITY: alignment.query_qualities = new[1]
-				else: alignment.query_sequence = new[0]
+				if QUALITY:
+					alignment.query_sequence = qseq
+					alignment.query_qualities = new[1]
+				else:
+					alignment.query_sequence = new[0]
+					alignment.query_qualities = qual
 
 			# write read to 'modified' file
 			modified.write(alignment)
