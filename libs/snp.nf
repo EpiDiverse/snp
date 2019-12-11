@@ -23,7 +23,7 @@ process "preprocessing" {
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
     -o sorted.bam ${bam} || exit \$?
-    samtools calmd -b sorted.bam ${fasta} > calmd.bam
+    samtools calmd -b sorted.bam ${fasta} 1> calmd.bam 2> /dev/null
     samtools index calmd.bam
     """
 }
