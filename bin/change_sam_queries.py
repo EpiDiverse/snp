@@ -119,7 +119,7 @@ def main(BAM,OUT,GENOMIC,QUALITY,THREADS=1,TEMP=None,FASTA=None):
 	# Merge results from the workers with a recursive merging function
 	bam = recursion(jobs,rlimit,pool,TDIR,bool(genome))
 	bam = bam[0].get()
-	os.replace(bam, OUT)
+	os.replace(bam[0], OUT)
 
 	# close the pool
 	pool.close()
