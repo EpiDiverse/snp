@@ -258,7 +258,7 @@ process "plot_vcfstats" {
     // eg. [sample, /path/to/sample.bcf]
 
     output:
-    path "${sample}/stats"
+    path "${sample}"
 
     when:
     params.variants || !params.clusters
@@ -266,8 +266,8 @@ process "plot_vcfstats" {
     script:
     """
     mkdir ${sample}
-    bcftools stats ${bcf} > ${sample}/${sample}.stats || exit \$?
-    plot-vcfstats -P -p ${sample} ${sample}/${sample}.stats
+    bcftools stats ${bcf} > ${sample}/${bcf}.stats || exit \$?
+    plot-vcfstats -P -p ${sample} ${sample}/${bcf}.stats
     """
 }
 
