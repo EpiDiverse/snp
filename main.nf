@@ -137,13 +137,26 @@ if ( workflow.profile.tokenize(",").contains("test") ){
 } else {
 
     // STAGE BAM CHANNELS
-    BAM = Channel.fromFilePairs(bam_path, size: 1)
+    BAM = Channel.fromPath(bam_path)
         .ifEmpty{ exit 1, "ERROR: cannot find valid *.bam files in dir: ${params.input}\n"}
-        .map{it.flatten()}
+        .map{ tuple(it.parent.name, it) }
         .take(params.take.toInteger())
 
 }
 
+// Error handling when clustering with fewer than three samples
+if( clusters ){
+
+    BAM
+        .count()
+        .subscribe{int c ->
+            if( c <= 2 ){
+                error "ERROR: clustering is only possible with a minimum of three samples"
+                exit 1
+            }
+        }
+
+}
 
 ////////////////////
 // BEGIN PIPELINE //
