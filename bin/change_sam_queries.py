@@ -125,7 +125,8 @@ def main(BAM,OUT,GENOMIC,QUALITY,THREADS=1,TEMP=None,FASTA=None):
 	pool.join()
 
 	# output the final file
-	os.replace(bam[0], OUT)
+	if isinstance(bam, str): os.replace(bam, OUT)
+	else: os.replace(bam[0], OUT)
 
 	###################
 	# Goodbye message
