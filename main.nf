@@ -229,7 +229,7 @@ workflow {
 
     publish:
         SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'copy'
-        SNPS.out.bam_clusters to: "${params.output}/bam/variants", mode: 'copy'
+        SNPS.out.bam_variants to: "${params.output}/bam/variants", mode: 'copy'
         SNPS.out.khmer_publish to: "${params.output}/hashes", mode: 'copy'
         SNPS.out.kwip_publish to: "${params.output}", mode: 'copy'
         SNPS.out.clustering_publish to: "${params.output}", mode: 'move'
