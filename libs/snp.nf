@@ -48,7 +48,8 @@ process "masking" {
 
     script:
     """
-    change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam
+    change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam || exit \$?
+    find -mindepth 1 -maxdepth 1 -type d -exec echo rm -r {} \\;
     """
 }
 
