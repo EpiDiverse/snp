@@ -73,7 +73,7 @@ process "extracting" {
     path "${sample}.bam"
 
     when:
-    params.clusters
+    params.clusters || (!params.variants && !params.clusters)
 
     script:
     """
@@ -102,7 +102,7 @@ process "khmer" {
     // eg. [/path/to/sample.ct.gz]
 
     when:
-    params.clusters
+    params.clusters || (!params.variants && !params.clusters)
 
     script:
     """
@@ -126,7 +126,7 @@ process "kwip" {
     // eg. [/path/to/kern.txt, /path/to/dist.txt]
 
     when:
-    params.clusters
+    params.clusters || (!params.variants && !params.clusters)
 
     script:
     """
@@ -149,7 +149,7 @@ process "clustering" {
     path "*.pdf"
 
     when:
-    params.clusters
+    params.clusters || (!params.variants && !params.clusters)
 
     script:
     """
@@ -177,9 +177,8 @@ process "sorting" {
     // eg. [sample, /path/to/sample.bam, /path/to/sample.bam.bai]
     path "${sample}.bam"
 
-
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -210,7 +209,7 @@ process "freebayes" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -237,7 +236,7 @@ process "bcftools" {
     // eg. [sample, /path/to/sample.bcf]
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -262,7 +261,7 @@ process "plot_vcfstats" {
     path "${sample}/*"
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -288,7 +287,7 @@ process "extractHAIRS" {
     // eg. [sample, /path/to/sample.txt]
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -312,7 +311,7 @@ process "HAPCUT2" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -337,7 +336,7 @@ process "bamsplit" {
     // eg. [sample, [/path/to/*.bam, ...]]
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """
@@ -366,7 +365,7 @@ process "MethylDackel" {
     // eg. [sample, [/path/to/logs/*, ...]]
 
     when:
-    params.variants || !params.clusters
+    params.variants || (!params.variants && !params.clusters)
 
     script:
     """

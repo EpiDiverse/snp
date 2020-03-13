@@ -18,16 +18,13 @@ if(params.help){
          Options: GENERAL
               --input [path/to/input/dir]     [REQUIRED] Specify the path to the directory containing each sample output
                                           from the wgbs pipeline to be taken forward for analysis. All the subdirectories must
-                                          correspond to sample names in the provided samples file, and contain within them a
-                                          bedGraph directories with files in '*.bedGraph' format.
+                                          correspond to sample names, and contain within them files in *.bam format.
 
-              --reference [path/to/ref.fa]    Path to the input reference genome file in fasta format. Required for the 
+              --reference [path/to/ref.fa]    Path to the input reference genome file in fasta format. REQUIRED for the 
                                           variant calling aspect of the pipeline, along with a valid fasta index *.fai file.
 
               --output [STR]                  A string that will be used as the name for the output results directory, which
-                                          will be generated in the working directory. This directory will contain
-                                          sub-directories for each set of reads analysed during the pipeline.
-                                          [default: dmrs]
+                                          will be generated in the working directory [default: snps]
 
 
          Options: MODIFIERS
