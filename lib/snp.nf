@@ -259,7 +259,7 @@ process "plot_vcfstats" {
     // eg. [sample, /path/to/sample.bcf]
 
     output:
-    path "${sample}"
+    path "${sample}/*"
 
     when:
     params.variants || !params.clusters

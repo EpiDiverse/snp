@@ -76,18 +76,12 @@ if(params.version){
 bam_path = "${params.input}/*/*.bam"
 
 // conditionals for setting --clusters and --variants
-if( !params.clusters ){
-
-    variants = true
-    clusters = false
-} else if( params.variants ){
-
+if( !params.clusters && !params.variants ){
     variants = true
     clusters = true
 } else {
-
-    variants = false
-    clusters = true
+    variants = params.variants
+    clusters = params.clusters
 }
 
 // check reference
@@ -131,7 +125,7 @@ log.info ""
 // STAGE BEDGRAPH CHANNELS FROM TEST PROFILE
 if ( workflow.profile.tokenize(",").contains("test") ){
 
-        include check_test_data from './libs/functions.nf' params(BAMPaths: params.BAMPaths)
+        include check_test_data from './lib/functions.nf' params(BAMPaths: params.BAMPaths)
         BAM = check_test_data(params.BAMPaths)
 
 } else {
@@ -163,7 +157,7 @@ if( clusters ){
 ////////////////////
 
 // INCLUDES
-include './libs/snp.nf' params(params)
+include './lib/snp.nf' params(params)
 
 // WORKFLOWS
 
