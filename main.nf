@@ -69,8 +69,11 @@ if(params.version){
 }
 
 
+// VALIDATE PARAMETERS
+ParameterChecks.checkParams(params)
+
 // DEFINE PATHS
-bam_path = "${params.input}/*/*.bam"
+bam_path = "${params.input}/*.bam"
 
 // conditionals for setting --clusters and --variants
 if( !params.clusters && !params.variants ){
@@ -82,6 +85,10 @@ if( !params.clusters && !params.variants ){
 }
 
 // check reference
+fasta = file("${params.reference}", checkIfExists: true, glob: false)
+fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
+
+/*
 if( variants ){
 
     fasta = file("${params.reference}", checkIfExists: true, glob: false)
@@ -91,6 +98,7 @@ if( variants ){
     fasta = false
     fai = false
 }
+*/
 
 // PRINT STANDARD LOGGING INFO
 log.info ""
@@ -249,11 +257,11 @@ workflow.onComplete {
     log.info "         Name         : ${workflow.runName}${workflow.resume ? " (resumed)" : ""}"
     log.info "         Profile      : ${workflow.profile}"
     log.info "         Launch dir   : ${workflow.launchDir}"    
-    log.info "         Work dir     : ${workflow.workDir} ${params.debug ? "" : "(cleared)" }"
+    log.info "         Work dir     : ${workflow.workDir} ${workflow.success && !params.debug ? "(cleared)" : ""}"
     log.info "         Status       : ${workflow.success ? "success" : "failed"}"
     log.info "         Error report : ${workflow.errorReport ?: "-"}"
     log.info ""
 
-    if (params.debug == false && workflow.success) {
+    if (workflow.success && !params.debug) {
         ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute() }
 }

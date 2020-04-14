@@ -30,7 +30,8 @@ nextflow run epidiverse/snp -profile test,<docker|singularity|conda>
 iv. Start running your own analysis!
 
 ```bash
-nextflow run epidiverse/snp -profile <docker|singularity|conda> --input /path/to/wgbs/directory
+nextflow run epidiverse/snp -profile <docker|singularity|conda> \
+--input /path/to/wgbs/directory --reference /path/to/reference.fa
 ```
 
 > See the [usage documentation](docs/usage.md) for all of the available options when running the pipeline.
