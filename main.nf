@@ -138,7 +138,7 @@ if ( workflow.profile.tokenize(",").contains("test") ){
     // STAGE BAM CHANNELS
     BAM = Channel.fromPath(bam_path)
         .ifEmpty{ exit 1, "ERROR: cannot find valid *.bam files in dir: ${params.input}\n"}
-        .map{ tuple(it.parent.name, it) }
+        .map{ tuple(it.baseName, it) }
         .take(params.take.toInteger())
 
 }
@@ -154,7 +154,6 @@ if( clusters ){
                 exit 1
             }
         }
-
 }
 
 ////////////////////
