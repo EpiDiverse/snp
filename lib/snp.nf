@@ -49,7 +49,7 @@ process "masking" {
     script:
     """
     change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam || exit \$?
-    find -mindepth 1 -maxdepth 1 -type d -exec echo rm -r {} \\;
+    find -mindepth 1 -maxdepth 1 -type d -exec rm -r {} \\;
     """
 }
 
@@ -79,7 +79,7 @@ process "extracting" {
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
     -no ${sample}.bam ${bam} || exit \$?
-    samtools fastq ${sample}.bam > ${sample}.fastq.gz
+    samtools fastq -c 6 ${sample}.bam > ${sample}.fastq.gz
     """
 }
 
