@@ -23,7 +23,7 @@ process "preprocessing" {
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
     -o sorted.bam ${bam} || exit \$?
-    samtools calmd -b sorted.bam ${fasta} 1> calmd.bam 2> /dev/null
+    samtools calmd -b sorted.bam ${fasta} 1> calmd.bam 2> /dev/null && rm sorted.bam
     samtools index calmd.bam
     """
 }
@@ -79,7 +79,7 @@ process "extracting" {
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
     -no ${sample}.bam ${bam} || exit \$?
-    samtools fastq -c 6 ${sample}.bam > ${sample}.fastq.gz
+    samtools fastq ${sample}.bam | gzip -c > ${sample}.fastq.gz
     """
 }
 
