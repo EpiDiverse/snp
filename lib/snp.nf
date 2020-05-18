@@ -79,7 +79,7 @@ process "extracting" {
     """
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
     -no ${sample}.bam ${bam} || exit \$?
-    samtools fastq ${sample}.bam | gzip -c > ${sample}.fastq.gz
+    samtools fastq ${sample}.bam | gzip -c > ${sample}.fastq.gz && rm ${sample}.bam
     """
 }
 
