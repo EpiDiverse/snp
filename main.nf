@@ -204,7 +204,7 @@ workflow 'SNPS' {
 
     emit:
         bam_variants = sorting.out[1]
-        bam_clusters = extracting.out[1]
+        //bam_clusters = extracting.out[1]
         khmer_publish = khmer.out
         kwip_publish = kwip.out
         clustering_publish = clustering.out
@@ -226,7 +226,7 @@ workflow {
         SNPS(BAM, fasta, fai)
 
     publish:
-        SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'move'
+        //SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'move'
         SNPS.out.bam_variants to: "${params.output}/bam/variants", mode: 'copy'
         SNPS.out.khmer_publish to: "${params.output}/hashes", mode: 'copy'
         SNPS.out.kwip_publish to: "${params.output}", mode: 'copy'

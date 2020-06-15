@@ -70,7 +70,7 @@ process "extracting" {
     output:
     tuple sample, path("${sample}.fastq.gz")
     // eg. [sample, /path/to/sample.fastq.gz]
-    path "${sample}.bam"
+    //path "${sample}.bam"
 
     when:
     params.clusters || (!params.variants && !params.clusters)
