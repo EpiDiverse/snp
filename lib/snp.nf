@@ -48,7 +48,7 @@ process "masking" {
 
     script:
     """
-    change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam || exit \$?
+    change_sam_queries.py -Q -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam || exit \$?
     find -mindepth 1 -maxdepth 1 -type d -exec rm -r {} \\;
     """
 }
@@ -214,7 +214,12 @@ process "freebayes" {
     script:
     """
     fasta_generate_regions.py ${fai} ${params.regions} > regions.txt
-    freebayes-parallel regions.txt ${task.cpus} -f ${fasta} ${bam} > ${sample}.vcf
+    freebayes-parallel regions.txt ${task.cpus} -f ${fasta} \\
+    --report-genotype-likelihood-max \\
+    --genotype-qualities \\ 
+    --no-partial-observations \\
+    --min-repeat-entropy 1 \\
+    ${bam} > ${sample}.vcf
     """
 }
 
