@@ -214,12 +214,11 @@ process "freebayes" {
     script:
     """
     fasta_generate_regions.py ${fai} ${params.regions} > regions.txt
-    freebayes-parallel regions.txt ${task.cpus} -f ${fasta} \\
+    freebayes-parallel regions.txt ${task.cpus} -f ${fasta} ${bam} \\
     --report-genotype-likelihood-max \\
     --genotype-qualities \\ 
     --no-partial-observations \\
-    --min-repeat-entropy 1 \\
-    ${bam} > ${sample}.vcf
+    --min-repeat-entropy 1 > ${sample}.vcf
     """
 }
 
