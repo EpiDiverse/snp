@@ -215,7 +215,7 @@ process "freebayes" {
     """
     fasta_generate_regions.py ${fai} ${params.regions} > regions.txt
     freebayes-parallel regions.txt ${task.cpus} -f ${fasta} ${bam} \\
-    --no-partial-observations --report-genotype-likelihood-max --genotype-qualities --min-repeat-entropy 1 > ${sample}.vcf
+    --no-partial-observations --report-genotype-likelihood-max --genotype-qualities --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} > ${sample}.vcf
     """
 }
 
@@ -233,7 +233,7 @@ process "bcftools" {
     // eg. [sample, /path/to/raw.vcf]
 
     output:
-    tuple sample, path("${sample}.bcf")
+    tuple sample, path("${sample}.vcf.gz")
     // eg. [sample, /path/to/sample.bcf]
 
     when:
@@ -242,7 +242,8 @@ process "bcftools" {
     script:
     """
     #bcftools view -Ob${params.ploidy ? " --max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
-    bcftools view -Ob raw.vcf > ${sample}.bcf
+    #bcftools view -Ob raw.vcf > ${sample}.bcf
+    bcftools view -Oz raw.vcf > ${sample}.vcf.gz
     """
 }
 

@@ -4,6 +4,8 @@ class ParameterChecks {
         assert params.reference, "Please specify path to reference fasta with --reference parameter"
         assert params.regions instanceof Integer && params.regions > 0, "--regions parameter must be a positive integer!"
         assert params.ploidy instanceof Integer && params.ploidy > 0, "--ploidy parameter must be a positive integer!"
+        assert params.entropy instanceof Integer && params.entropy > 0, "--entropy parameter must be a positive integer!"
+        assert params.coverage instanceof Integer && params.coverage >= 0, "--coverage parameter must be a non-negative integer!"
         assert params.take instanceof Integer && params.take >= 0, "--take parameter must be a non-negative integer!"
         assert params.fork instanceof Integer && params.fork >= 0, "--fork parameter must be a non-negative integer!"
 	}
