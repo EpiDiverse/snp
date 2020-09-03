@@ -1,11 +1,15 @@
 [<img width="200" align="right" src="docs/images/euflagbetter.jpg">](https://ec.europa.eu/programmes/horizon2020/en)
 [<img width="200" align="right" src="docs/images/epidiverse-logo.jpg">](https://epidiverse.eu)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.09.0-brightgreen.svg)](https://www.nextflow.io/)
-[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
-[![Docker](https://img.shields.io/docker/automated/epidiverse/snp.svg)](https://hub.docker.com/r/epidiverse/snp)
 
 EpiDiverse-SNP Pipeline
 ========================
+
+[![Nextflow](https://img.shields.io/badge/nextflow-20.07.1-45818e.svg)](https://www.nextflow.io/)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-45818e.svg)](http://bioconda.github.io/)
+[![Docker](https://img.shields.io/docker/cloud/automated/epidiverse/snp.svg)](https://hub.docker.com/r/epidiverse/snp)
+[![Release](https://img.shields.io/github/v/release/epidiverse/snp.svg?colorB=45818e)](https://github.com/EpiDiverse/snp/releases/latest)
+[![Publication](https://img.shields.io/badge/Published-in%20press.svg?colorB=45818e&style=popout)]()
+[![Twitter](https://img.shields.io/twitter/follow/epidiverse?style=social)](https://twitter.com/intent/follow?screen_name=epidiverse)
 
 **EpiDiverse/snp** is a bioinformatics analysis pipeline for calling single nucleotide polymorphism variants from bisulfite sequencing data and/or for clustering of eg. environmental plant samples according to their methylation profiles while masking the genomic variation.
 
@@ -17,20 +21,20 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 ## Quick Start
 
-i. Install [`nextflow`](https://www.nextflow.io/)
+1. Install [`nextflow`](https://www.nextflow.io/)
 
-ii. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
+2. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
 
-iii. Download the pipeline and test it on a minimal dataset with a single command
+3. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
-nextflow run epidiverse/snp -profile test,<docker|singularity|conda>
+NXF_VER=20.07.1 nextflow run epidiverse/snp -profile test,<docker|singularity|conda>
 ```
 
-iv. Start running your own analysis!
+4. Start running your own analysis!
 
 ```bash
-nextflow run epidiverse/snp -profile <docker|singularity|conda> \
+NXF_VER=20.07.1 nextflow run epidiverse/snp -profile <docker|singularity|conda> \
 --input /path/to/wgbs/directory --reference /path/to/reference.fa
 ```
 

@@ -11,12 +11,12 @@ process "preprocessing" {
     maxForks "${params.fork}".toInteger()
 
     input:
-    tuple sample, path(bam)
+    tuple val(sample), path(bam)
     // eg. [sample, /path/to/sample.bam]
     path fasta
 
     output:
-    tuple sample, path("calmd.bam"), path("calmd.bam.bai")
+    tuple val(sample), path("calmd.bam"), path("calmd.bam.bai")
     // eg. [sample, [/path/to/calmd.bam, /path/to/calmd.bam.bai]]
 
     script:
@@ -39,11 +39,11 @@ process "masking" {
     maxForks "${params.fork}".toInteger()
 
     input:
-    tuple type, sample, path(bam), path(bai)
+    tuple val(type), val(sample), path(bam), path(bai)
     // eg. [clustering, sample, /path/to/sample.bam, /path/to/sample.bam.bai]
 
     output:
-    tuple type, sample, path("${type}.bam")
+    tuple val(type), val(sample), path("${type}.bam")
     // eg. [clustering, sample, /path/to/clustering.bam]
 
     script:
@@ -63,12 +63,14 @@ process "extracting" {
 
     maxForks "${params.fork}".toInteger()
 
+    publishDir "${params.output}/bam/clusters", mode: 'copy', enabled: true
+
     input:
-    tuple type, sample, path(bam)
+    tuple val(type), val(sample), path(bam)
     // eg. [clustering, sample, /path/to/sample.bam]
 
     output:
-    tuple sample, path("${sample}.fastq.gz")
+    tuple val(sample), path("${sample}.fastq.gz")
     // eg. [sample, /path/to/sample.fastq.gz]
     //path "${sample}.bam"
 
@@ -93,8 +95,10 @@ process "khmer" {
 
     maxForks "${params.fork}".toInteger()
 
+    publishDir "${params.output}/hashes", pattern: "${sample}.ct.gz", mode: 'copy', enabled: true
+
     input:
-    tuple sample, path(fastq)
+    tuple val(sample), path(fastq)
     // eg. [sample, /path/to/sample.fastq.gz]
 
     output:
@@ -116,6 +120,8 @@ process "kwip" {
 
     label "${params.high ? "high" : "low"}"
     label "finish"
+
+    publishDir "${params.output}", pattern: "*.txt", mode: 'copy', enabled: true
 
     input:
     path(hashes)
@@ -140,6 +146,8 @@ process "clustering" {
 
     label "low"
     label "finish"
+
+    publishDir "${params.output}", pattern: "*.pdf", mode: 'move', enabled: true
 
     input:
     tuple path(kern), path(dist)
@@ -168,12 +176,14 @@ process "sorting" {
 
     maxForks "${params.fork}".toInteger()
 
+    publishDir "${params.output}/bam/variants", pattern: "${sample}.bam", mode: 'copy', enabled: true
+
     input:
-    tuple type, sample, path(bam)
+    tuple val(type), val(sample), path(bam)
     // eg. [variant, sample, /path/to/sample.bam]
 
     output:
-    tuple sample, path("${sample}.bam"), path("${sample}.bam.bai")
+    tuple val(sample), path("${sample}.bam"), path("${sample}.bam.bai")
     // eg. [sample, /path/to/sample.bam, /path/to/sample.bam.bai]
     path "${sample}.bam"
 
@@ -198,14 +208,16 @@ process "freebayes" {
 
     maxForks "${params.fork}".toInteger()
 
+    publishDir "${params.output}/vcf", pattern: "${sample}.vcf", mode: 'copy', enabled: true
+
     input:
-    tuple sample, path(bam), path(bai)
+    tuple val(sample), path(bam), path(bai)
     // eg. [sample, /path/to/sample.bam, /path/to/sample.bam.bai]
     path fasta
     path fai
 
     output:
-    tuple sample, path("${sample}.vcf")
+    tuple val(sample), path("${sample}.vcf")
     // eg. [sample, /path/to/sample.vcf]
 
     when:
@@ -229,11 +241,11 @@ process "bcftools" {
     tag "$sample"
 
     input:
-    tuple sample, path("raw.vcf")
+    tuple val(sample), path("raw.vcf")
     // eg. [sample, /path/to/raw.vcf]
 
     output:
-    tuple sample, path("${sample}.vcf.gz")
+    tuple val(sample), path("${sample}.vcf.gz")
     // eg. [sample, /path/to/sample.bcf]
 
     when:
@@ -255,8 +267,10 @@ process "plot_vcfstats" {
     label "ignore"
     tag "$sample"
 
+    publishDir "${params.output}/stats", pattern: "${sample}/*", mode: 'move', enabled: true
+
     input:
-    tuple sample, path(bcf)
+    tuple val(sample), path(bcf)
     // eg. [sample, /path/to/sample.bcf]
 
     output:
@@ -281,11 +295,11 @@ process "extractHAIRS" {
     tag "$sample"
 
     input:
-    tuple sample, path(bam), path(bai), path(vcf)
+    tuple val(sample), path(bam), path(bai), path(vcf)
     // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai, /path/to/sample.vcf]
 
     output:
-    tuple sample, path("${sample}.txt")
+    tuple val(sample), path("${sample}.txt")
     // eg. [sample, /path/to/sample.txt]
 
     when:
@@ -305,11 +319,11 @@ process "HAPCUT2" {
     tag "$sample"
 
     input:
-    tuple sample, path(txt), path(vcf)
+    tuple val(sample), path(txt), path(vcf)
     // eg. [sample, /path/to/sample.txt, /path/to/sample.vcf]
 
     output:
-    tuple sample, path("phased.${sample}.vcf")
+    tuple val(sample), path("phased.${sample}.vcf")
     // eg. [sample, /path/to/sample.vcf]
 
     when:
@@ -329,12 +343,12 @@ process "bamsplit" {
     tag "$sample"
 
     input:
-    tuple sample, path(bam), path(bai), path(vcf)
+    tuple val(sample), path(bam), path(bai), path(vcf)
     // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai, /path/to/phased.vcf]
     path fasta
 
     output:
-    tuple sample, path("bam/*.bam")
+    tuple val(sample), path("bam/*.bam")
     // eg. [sample, [/path/to/*.bam, ...]]
 
     when:
@@ -355,15 +369,15 @@ process "MethylDackel" {
     tag "$sample"
 
     input:
-    tuple sample, path(bam)
+    tuple val(sample), path(bam)
     // eg. [sample, /path/to/haplotype.bam]
     path fasta
     val context
 
     output:
-    tuple sample, path("${sample}/${bam.baseName}/*.bedGraph")
+    tuple val(sample), path("${sample}/${bam.baseName}/*.bedGraph")
     // eg. [sample, [/path/to/*_CpG.bedGraph, ...]]
-    tuple sample, path("${sample}/${bam.baseName}/logs/*")
+    tuple val(sample), path("${sample}/${bam.baseName}/logs/*")
     // eg. [sample, [/path/to/logs/*, ...]]
 
     when:

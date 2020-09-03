@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // DSL2 BRANCH
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 // PRINT HELP AND EXIT
 if(params.help){
@@ -130,7 +130,7 @@ log.info ""
 // STAGE BEDGRAPH CHANNELS FROM TEST PROFILE
 if ( workflow.profile.tokenize(",").contains("test") ){
 
-        include check_test_data from './lib/functions.nf' params(BAMPaths: params.BAMPaths)
+        include {check_test_data} from './lib/functions.nf' params(BAMPaths: params.BAMPaths)
         BAM = check_test_data(params.BAMPaths)
 
 } else {
@@ -161,14 +161,14 @@ if( clusters ){
 ////////////////////
 
 // INCLUDES
-include './lib/snp.nf' params(params)
+include {preprocessing,masking,extracting,khmer,kwip,clustering,sorting,freebayes,bcftools,plot_vcfstats} from './lib/snp.nf' params(params)
 
 // WORKFLOWS
 
 // WGBS workflow - primary pipeline
 workflow 'SNPS' {
 
-    get:
+    take:
         BAM
         fasta
         fai
@@ -202,6 +202,7 @@ workflow 'SNPS' {
         //bamsplit(sorting.out.combine(HAPCUT2.out, by: 0))
         //MethylDackel(bamsplit.out.transpose())
 
+    /*
     emit:
         bam_variants = sorting.out[1]
         //bam_clusters = extracting.out[1]
@@ -215,6 +216,7 @@ workflow 'SNPS' {
         //vcf_phased = HAPCUT2.out
         //bam_haplotypes = bamsplit.out
         //bedGraphs = MethylDackel.out
+    */
 
 }
 
@@ -225,6 +227,7 @@ workflow {
     main:
         SNPS(BAM, fasta, fai)
 
+    /*
     publish:
         //SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'move'
         SNPS.out.bam_variants to: "${params.output}/bam/variants", mode: 'copy'
@@ -233,6 +236,7 @@ workflow {
         SNPS.out.clustering_publish to: "${params.output}", mode: 'move'
         SNPS.out.vcf_unphased to: "${params.output}/vcf", mode: 'copy'
         SNPS.out.vcf_vcfstats to: "${params.output}/stats", mode: 'move'
+    */
 
 }
 
