@@ -161,7 +161,7 @@ if( clusters ){
 ////////////////////
 
 // INCLUDES
-include {preprocessing,masking,extracting,khmer,kwip,clustering,sorting,freebayes,bcftools,plot_vcfstats} from './lib/snp.nf' params(params)
+include {preprocessing;masking;extracting;khmer;kwip;clustering;sorting;freebayes;bcftools;plot_vcfstats} from './lib/snp.nf' params(params)
 
 // WORKFLOWS
 
