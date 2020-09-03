@@ -33,6 +33,7 @@ Variant calling is performed with Freebayes, on whole genome bisulfite sequencin
     * `--min-repeat-entropy <ARG>`
     * `--min-coverage <ARG>`
 
+
 **Output directory: `snps/stats/[SAMPLE]/`**
 
 <img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/substitutions.png">
@@ -53,6 +54,7 @@ If `--clusters` has been specified during the pipeline run, then reads will be e
 **Output directory: `snps/`**
 
 <img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/clustering.png">
+
 * `clustering.pdf`
   * Plots based on distance and kernel metrics from kWIP
 
@@ -70,12 +72,12 @@ sample3	8.39729e+06	7.43909e+06	4.39799e+06	5.13139e+06	6.17416e+06	1.64687e+07
 * `dist.txt`
 ```
 	sample4	sample2	sample5	sample1	sample6	sample3
-sample4	0	1.01088	1.09159	1.00033	0.984962	0.933808
-sample2	1.01088	0	1.21372	1.09954	1.07707	0.971175
+sample4	0	1.01088	1.09159	1.00033	0.98496	0.93380
+sample2	1.01088	0	1.21372	1.09954	1.07707	0.97117
 sample5	1.09159	1.21372	0	1.11501	1.10007	1.12432
 sample1	1.00033	1.09954	1.11501	0	1.02676	1.00342
-sample6	0.984962	1.07707	1.10007	1.02676	0	0.987631
-sample3	0.933808	0.971175	1.12432	1.00342	0.987631	0
+sample6	0.98496	1.07707	1.10007	1.02676	0	0.98763
+sample3	0.93380	0.97117	1.12432	1.00342	0.98763	0
 ```
 
 * `hashes/*.ct.gz`
