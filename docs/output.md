@@ -4,86 +4,82 @@ This document describes the output produced by the pipeline.
 ## Pipeline overview
 The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
-* [Pre-processing](#pre-processing) -Sample filtering and parsing the samplesheet
-* [Masking](#masking) -Combining all samples into single files
-* [khmer and kWIP](#khmer-and-kwip) -Intersecting methylated positions based on DMPs and/or DMRs
-* [Variant calling](#variant-calling) -Calculating average methylation values for given DMRs
-* [Post-processing](#post-processing) -Filtering and merging input variant call file(s)
+* [Masking](#masking) -Preparing bam files for variant calling and/or clustering
+* [Variant calling](#variant-calling) -Variant calling on bisulfite sequencing data
+* [khmer and kWIP](#khmer-and-kwip) -Sample clustering based on k-mer similarity
 
 ### Output Directory Structure
 ![Output Directory Structure](/docs/images/directory.png)
 
-## Pre-processing
-The pipeline requires individual bedGraphs (in each specified methylation context) and a samplesheet with corresponding sample names, environmental trait values, and covariate values in order to run. The samplesheet is processed into the format required to run GEM, and individual sample bedGraphs are filtered according to coverage. If DMP or DMR comparisons are given then these will be filtered for a user-specified significance threshold on positions / regions prior to downstream analysis.
+## Masking
+After preprocessing input alignments (sort,calmd,index), nucleotide masking is performed either on bisulfite-converted positions or any genomic variation apparent in non-bisulfite contexts depending on whether the alignments should be used for variant calling, or sample clustering by k-mer similarity, respectively.
 
-**Output directory: `ewas/input/`**
+**Output directory: `snps/bam/{clusters,variants}/`**
 
-* `cov.txt`
-* `env.txt`
-* `gxe.txt`
-  * **NB:** Only saved if GxE model is enabled during the pipeline run.
+* `*.bam`
+  * **NB:** Only saved if corresponding modes `--clusters` and/or `--variants` specified during pipeline run.
 
 
-## Bedtools unionbedg
-Following sample pre-processing, the entire collection of each input type is merged into single files per each methylation context. From *.bedGraph files each position denotes the methylation value for each input sample, and all files denote the presence/absence of a given position/region for individual samples/comparisons by the use of "NA".
+## Variant calling
+Variant calling is performed with Freebayes, on whole genome bisulfite sequencing data which has been masked in bisulfite contexts and can be thus interpreted as normal sequencing data. Statistics are estimated with `bcftools stats` and plotted with `plot_vcfstats`.
 
-**Output directory: `ewas/input/bed`**
+**Output directory: `snps/vcf/`**
 
-* `{CpG,CHG,CHH}.bedGraph.bed`
+* `*.vcf.gz`
+  * The full results from Freebayes (parallel), run using the following options:
+    * `--no-partial-observations`
+    * `--report-genotype-likelihood-max`
+    * `--genotype-qualities`
+    * `--min-repeat-entropy <ARG>`
+    * `--min-coverage <ARG>`
 
+**Output directory: `snps/stats/[SAMPLE]/`**
+
+* `substitutions.png`
+  * Overall counts for each substitution type.
+
+<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/substitutions.png">
+
+* `tstv_by_qual.png`
+  * Overall transition/transversion ratio and counts by descending QUAL score
+
+<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/tstv_by_qual.png">
+
+
+## khmer and kWIP
+If `--clusters` has been specified during the pipeline run, then reads will be extracted from corresponding alignment files masking genomic variation, and 
+
+**Output directory: `snps/`**
+
+* `clustering.pdf`
+  * Plots based on distance and kernel metrics from kWIP
+
+<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/clustering.png">
+
+* `kern.txt`
 ```
-chrom	start	end	sample1	sample2	sample3	sample4	sample5	sample6	sample7	sample8	sample9
-scaffold_53	390	391	0.50	1.00	NA	NA	0.33	1.00	1.00	0.50	0.00
-scaffold_53	392	393	NA	1.00	NA	NA	NA	0.00	NA	NA	NA
-scaffold_53	581	582	0.66	0.75	1.00	1.00	0.66	1.00	0.66	0.75	1.00
-scaffold_53	583	584	0.87	1.00	1.00	1.00	0.75	0.83	0.77	0.71	1.00
-scaffold_53	671	672	0.50	1.00	1.00	1.00	1.00	1.00	1.00	1.00	1.00
-scaffold_53	673	674	0.87	0.93	0.66	0.50	0.85	0.83	0.90	1.00	1.00
-...
-```
-
-* `{CpG,CHG,CHH}.DMPs.bed`
-  * **NB:** Only saved if DMPs are given during the pipeline run.
-* `{CpG,CHG,CHH}.DMRs.bed`
-  * **NB:** Only saved if DMRs are given during the pipeline run.
-
-```
-chrom   start   end     g1_vs_g2    g1_vs_g3    g2_vs_g3
-scaffold_53     166683  166807  NA      NA      0.037
-scaffold_53     227390  227644  NA      NA      0.006
-scaffold_53     309090  309149  NA      0.000   NA
-scaffold_53     309149  309180  0.017   0.000   NA
-scaffold_53     309180  309262  0.017   NA      NA
-scaffold_53     309535  309715  NA      0.000   0.000
-...
-```
-
-
-## GxE model
-The GxE model tests for the interaction between methQTLs and the environmental trait. As the matrix of methylated positions vs SNPs is orders of magnitude larger than methylated positions alone, this analysis is divided among individual scaffolds and combined at the end for FDR calculation.
-
-**Output directory: `ewas/{positions,regions}/GxE`**
-
-* `*.txt`
-  * The full results from GEM GxE model output
-* `*.filtered_*_FDR.txt`
-  * The results from GEM GxE model filtered by FDR threshold
-
-```
-cpg                snp     beta        stats     pvalue        FDR
-MA_1063600_3380    SNP962  0.17808859  42.28204  1.482360e-111 1.482360e-106
-MA_130823_2338     SNP700 -0.21534752 -18.43573  1.761554e-47  8.807769e-43
-MA_124616_3396     SNP578 -0.15171656 -16.70323  9.169281e-42  3.056427e-37
-MA_659042_4763     SNP690  0.10567235  13.47239  5.237893e-31  1.309473e-26
-MA_101037_18934    SNP589  0.07781375  13.07099  1.112935e-29  2.225870e-25
-MA_45879_4444      SNP703  0.13979006  12.55871  5.390763e-28  8.984606e-24
-...
+	sample4	sample2	sample5	sample1	sample6	sample3
+sample4	1.34604e+07	6.22459e+06	4.36788e+06	4.66799e+06	5.61053e+06	8.39729e+06
+sample2	6.22459e+06	1.20348e+07	2.69173e+06	3.49371e+06	4.32674e+06	7.43909e+06
+sample5	4.36788e+06	2.69173e+06	8.6747e+06	2.83771e+06	3.45439e+06	4.39799e+06
+sample1	4.66799e+06	3.49371e+06	2.83771e+06	6.48395e+06	3.57604e+06	5.13139e+06
+sample6	5.61053e+06	4.32674e+06	3.45439e+06	3.57604e+06	8.81986e+06	6.17416e+06
+sample3	8.39729e+06	7.43909e+06	4.39799e+06	5.13139e+06	6.17416e+06	1.64687e+07
 ```
 
-* `*/*.png`
-  * Plots for the top K most significant interactions and the associations with the environmental trait for major allele homozygote (AA), heterozygote (AB) and minor allele homozygote (BB) for all SNPs across all samples.
+* `dist.txt`
+```
+	sample4	sample2	sample5	sample1	sample6	sample3
+sample4	0	1.01088	1.09159	1.00033	0.984962	0.933808
+sample2	1.01088	0	1.21372	1.09954	1.07707	0.971175
+sample5	1.09159	1.21372	0	1.11501	1.10007	1.12432
+sample1	1.00033	1.09954	1.11501	0	1.02676	1.00342
+sample6	0.984962	1.07707	1.10007	1.02676	0	0.987631
+sample3	0.933808	0.971175	1.12432	1.00342	0.987631	0
+```
 
-<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/kplot.png">
+* `hashes/*.ct.gz`
+  * K-mer hashes for individual samples, derived from khmer 
 
 
 ## Pipeline Info

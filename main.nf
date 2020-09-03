@@ -88,18 +88,6 @@ if( !params.clusters && !params.variants ){
 fasta = file("${params.reference}", checkIfExists: true, glob: false)
 fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
 
-/*
-if( variants ){
-
-    fasta = file("${params.reference}", checkIfExists: true, glob: false)
-    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-} else {
-
-    fasta = false
-    fai = false
-}
-*/
-
 // PRINT STANDARD LOGGING INFO
 log.info ""
 log.info "         ================================================"
