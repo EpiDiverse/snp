@@ -35,15 +35,16 @@ Variant calling is performed with Freebayes, on whole genome bisulfite sequencin
 
 **Output directory: `snps/stats/[SAMPLE]/`**
 
+<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/substitutions.png">
+
 * `substitutions.png`
   * Overall counts for each substitution type.
 
-<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/substitutions.png">
+<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/tstv_by_qual.png">
 
 * `tstv_by_qual.png`
   * Overall transition/transversion ratio and counts by descending QUAL score
 
-<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/tstv_by_qual.png">
 
 
 ## khmer and kWIP
@@ -51,10 +52,9 @@ If `--clusters` has been specified during the pipeline run, then reads will be e
 
 **Output directory: `snps/`**
 
+<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/clustering.png">
 * `clustering.pdf`
   * Plots based on distance and kernel metrics from kWIP
-
-<img align="center" alt="Plot for a single interaction of SNP and methylated position" src="images/clustering.png">
 
 * `kern.txt`
 ```
