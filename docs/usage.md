@@ -9,9 +9,10 @@ This document describes the parameter options used by the pipeline.
 * [Modifiers](#modifiers)
     * [`--variants`](#--variants)
     * [`--clusters`](#--clusters)
-* [Variant calling](#variant-calling) 
-    * [`--regions`](#--regions)
-    * [`--ploidy`](#--ploidy)
+* [Variant calling](#variant-calling)
+    * [`--coverage`](#--coverage-arg)
+    * [`--ploidy`](#--ploidy-arg) 
+    * [`--regions`](#--regions-arg)
 * [Additional Parameters](#Additional-Parameters)
     * [`--debug`](#--debug)
     * [`--version`](#--version)
@@ -69,13 +70,16 @@ Run pipeline in variant calling mode. Disables clustering mode unless also speci
 Run pipeline in clustering mode. Disables variant calling mode unless also specified. If neither mode is specified then both will run [default: off]
 
 
-## SNP Filtering 
+## Variant Calling 
 
-### `--regions <ARG>`
-Variant calling with Freebayes parallel will split bam files into chunks of alignments over reference regions of N bases as defined by this parameter [default: 100000]
+### `--coverage <ARG>`
+Require at least this coverage to process a variant site. [default: 0]
 
 ### `--ploidy <ARG>`
 Specify the expected ploidy count for the genome [default: 2]
+
+### `--regions <ARG>`
+Variant calling with Freebayes parallel will split bam files into chunks of alignments over reference regions of N bases as defined by this parameter [default: 100000]
 
 
 ## Additional Parameters

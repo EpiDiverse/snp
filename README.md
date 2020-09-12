@@ -8,7 +8,7 @@ EpiDiverse-SNP Pipeline
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-45818e.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/cloud/automated/epidiverse/snp.svg)](https://hub.docker.com/r/epidiverse/snp)
 [![Release](https://img.shields.io/github/v/release/epidiverse/snp.svg?colorB=45818e)](https://github.com/EpiDiverse/snp/releases/latest)
-[![Publication](https://img.shields.io/badge/Published-in%20press.svg?colorB=45818e&style=popout)]()
+[![Publication](https://img.shields.io/badge/Publication-in%20prep.-45818e.svg?colorB=45818e&style=popout)]()
 [![Twitter](https://img.shields.io/twitter/follow/epidiverse?style=social)](https://twitter.com/intent/follow?screen_name=epidiverse)
 
 **EpiDiverse/snp** is a bioinformatics analysis pipeline for calling single nucleotide polymorphism variants from bisulfite sequencing data and/or for clustering of eg. environmental plant samples according to their methylation profiles while masking the genomic variation.
