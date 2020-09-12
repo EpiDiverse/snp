@@ -7,6 +7,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 * [Masking](#masking) -Preparing bam files for variant calling and/or clustering
 * [Variant calling](#variant-calling) -Variant calling on bisulfite sequencing data
 * [khmer and kWIP](#khmer-and-kwip) -Sample clustering based on k-mer similarity
+* [Pipeline info](#pipeline-info) -reports from nextflow about the pipeline run
 
 ### Output Directory Structure
 ![Output Directory Structure](/docs/images/directory.png)
@@ -58,6 +59,7 @@ If `--clusters` has been specified during the pipeline run, then reads will be e
 * `clustering.pdf`
   * Plots based on distance and kernel metrics from kWIP
 
+
 * `kern.txt`
 ```
 	sample4	sample2	sample5	sample1	sample6	sample3
@@ -69,6 +71,7 @@ sample6	5.61053e+06	4.32674e+06	3.45439e+06	3.57604e+06	8.81986e+06	6.17416e+06
 sample3	8.39729e+06	7.43909e+06	4.39799e+06	5.13139e+06	6.17416e+06	1.64687e+07
 ```
 
+
 * `dist.txt`
 ```
 	sample4	sample2	sample5	sample1	sample6	sample3
@@ -79,6 +82,7 @@ sample1	1.00033	1.09954	1.11501	0	1.02676	1.00342
 sample6	0.98496	1.07707	1.10007	1.02676	0	0.98763
 sample3	0.93380	0.97117	1.12432	1.00342	0.98763	0
 ```
+
 
 * `hashes/*.ct.gz`
   * K-mer hashes for individual samples, derived from khmer 
