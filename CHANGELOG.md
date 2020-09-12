@@ -2,6 +2,10 @@
 ---
 # Releases
 
+## v1.0 - 
+* Update to Nextflow 20.07.1 syntax
+* Updated documentation
+
 ---
 # Prereleases
 ## v0.1.0dev - 

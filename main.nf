@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // DSL2 BRANCH
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 // PRINT HELP AND EXIT
 if(params.help){
@@ -18,16 +18,13 @@ if(params.help){
          Options: GENERAL
               --input [path/to/input/dir]     [REQUIRED] Specify the path to the directory containing each sample output
                                           from the wgbs pipeline to be taken forward for analysis. All the subdirectories must
-                                          correspond to sample names in the provided samples file, and contain within them a
-                                          bedGraph directories with files in '*.bedGraph' format.
+                                          correspond to sample names, and contain within them files in *.bam format.
 
-              --reference [path/to/ref.fa]    Path to the input reference genome file in fasta format. Required for the 
+              --reference [path/to/ref.fa]    Path to the input reference genome file in fasta format. REQUIRED for the 
                                           variant calling aspect of the pipeline, along with a valid fasta index *.fai file.
 
               --output [STR]                  A string that will be used as the name for the output results directory, which
-                                          will be generated in the working directory. This directory will contain
-                                          sub-directories for each set of reads analysed during the pipeline.
-                                          [default: dmrs]
+                                          will be generated in the working directory [default: snps]
 
 
          Options: MODIFIERS
@@ -72,34 +69,24 @@ if(params.version){
 }
 
 
+// VALIDATE PARAMETERS
+ParameterChecks.checkParams(params)
+
 // DEFINE PATHS
-bam_path = "${params.input}/*/*.bam"
+bam_path = "${params.input}/*.bam"
 
 // conditionals for setting --clusters and --variants
-if( !params.clusters ){
-
-    variants = true
-    clusters = false
-} else if( params.variants ){
-
+if( !params.clusters && !params.variants ){
     variants = true
     clusters = true
 } else {
-
-    variants = false
-    clusters = true
+    variants = params.variants
+    clusters = params.clusters
 }
 
 // check reference
-if( variants ){
-
-    fasta = file("${params.reference}", checkIfExists: true, glob: false)
-    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-} else {
-
-    fasta = false
-    fai = false
-}
+fasta = file("${params.reference}", checkIfExists: true, glob: false)
+fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
 
 // PRINT STANDARD LOGGING INFO
 log.info ""
@@ -131,7 +118,7 @@ log.info ""
 // STAGE BEDGRAPH CHANNELS FROM TEST PROFILE
 if ( workflow.profile.tokenize(",").contains("test") ){
 
-        include check_test_data from './libs/functions.nf' params(BAMPaths: params.BAMPaths)
+        include {check_test_data} from './lib/functions.nf' params(BAMPaths: params.BAMPaths)
         BAM = check_test_data(params.BAMPaths)
 
 } else {
@@ -139,7 +126,7 @@ if ( workflow.profile.tokenize(",").contains("test") ){
     // STAGE BAM CHANNELS
     BAM = Channel.fromPath(bam_path)
         .ifEmpty{ exit 1, "ERROR: cannot find valid *.bam files in dir: ${params.input}\n"}
-        .map{ tuple(it.parent.name, it) }
+        .map{ tuple(it.baseName, it) }
         .take(params.take.toInteger())
 
 }
@@ -155,7 +142,6 @@ if( clusters ){
                 exit 1
             }
         }
-
 }
 
 ////////////////////
@@ -163,14 +149,14 @@ if( clusters ){
 ////////////////////
 
 // INCLUDES
-include './libs/snp.nf' params(params)
+include {preprocessing;masking;extracting;khmer;kwip;clustering;sorting;freebayes;bcftools;plot_vcfstats} from './lib/snp.nf' params(params)
 
 // WORKFLOWS
 
 // WGBS workflow - primary pipeline
 workflow 'SNPS' {
 
-    get:
+    take:
         BAM
         fasta
         fai
@@ -204,9 +190,10 @@ workflow 'SNPS' {
         //bamsplit(sorting.out.combine(HAPCUT2.out, by: 0))
         //MethylDackel(bamsplit.out.transpose())
 
+    /*
     emit:
         bam_variants = sorting.out[1]
-        bam_clusters = extracting.out[1]
+        //bam_clusters = extracting.out[1]
         khmer_publish = khmer.out
         kwip_publish = kwip.out
         clustering_publish = clustering.out
@@ -217,6 +204,7 @@ workflow 'SNPS' {
         //vcf_phased = HAPCUT2.out
         //bam_haplotypes = bamsplit.out
         //bedGraphs = MethylDackel.out
+    */
 
 }
 
@@ -227,14 +215,16 @@ workflow {
     main:
         SNPS(BAM, fasta, fai)
 
+    /*
     publish:
-        SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'copy'
+        //SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'move'
         SNPS.out.bam_variants to: "${params.output}/bam/variants", mode: 'copy'
         SNPS.out.khmer_publish to: "${params.output}/hashes", mode: 'copy'
         SNPS.out.kwip_publish to: "${params.output}", mode: 'copy'
         SNPS.out.clustering_publish to: "${params.output}", mode: 'move'
         SNPS.out.vcf_unphased to: "${params.output}/vcf", mode: 'copy'
         SNPS.out.vcf_vcfstats to: "${params.output}/stats", mode: 'move'
+    */
 
 }
 
@@ -258,11 +248,11 @@ workflow.onComplete {
     log.info "         Name         : ${workflow.runName}${workflow.resume ? " (resumed)" : ""}"
     log.info "         Profile      : ${workflow.profile}"
     log.info "         Launch dir   : ${workflow.launchDir}"    
-    log.info "         Work dir     : ${workflow.workDir} ${params.debug ? "" : "(cleared)" }"
+    log.info "         Work dir     : ${workflow.workDir} ${workflow.success && !params.debug ? "(cleared)" : ""}"
     log.info "         Status       : ${workflow.success ? "success" : "failed"}"
     log.info "         Error report : ${workflow.errorReport ?: "-"}"
     log.info ""
 
-    if (params.debug == false && workflow.success) {
+    if (workflow.success && !params.debug) {
         ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute() }
 }
