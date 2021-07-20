@@ -165,7 +165,24 @@ if( clusters ){
 ////////////////////
 
 // INCLUDES
-include {preprocessing;masking;extracting;khmer;kwip;clustering;sorting;freebayes;bcftools;plot_vcfstats} from './lib/snp.nf' params(params)
+
+include {
+    preprocessing;
+    masking;
+    extracting;
+    khmer;
+    kwip;
+    clustering;
+    sorting;
+    freebayes;
+    bcftools;
+    plot_vcfstats;
+    split_scaffolds;
+    WhatsHap_phase;
+    WhatsHap_haplotag;
+    WhatsHap_split;
+    MethylDackel;
+} from './lib/snp.nf' params(params)
 
 // WORKFLOWS
 
@@ -198,32 +215,20 @@ workflow 'SNPS' {
         // variant calling workflow
         sorting(masking.out.filter{ it[0] == "variants" })
         freebayes(sorting.out[0], fasta, fai)
-        if (phasings) { bcftools(WhatsHap_phase.out.groupTuple()) }
-        else { bcftools(freebayes.out) }
-        plot_vcfstats(bcftools.out)
 
         // haplotyping workflow (read-based)
         split_scaffolds(freebayes.out)
-        WhatsHap_phase(masking.out.filter{ it[0] == "variants" }.map{ it.tail() }.combine(split_scaffolds.out.transpose(), by:0))
-        WhatsHap_haplotag(masking.out.filter{ it[0] == "variants" }.map{ it.tail() }.join(bcftools.out))
-        WhatsHap_split(preprocessing.out.join(WhatsHap_haplotag.out))
+        WhatsHap_phase(sorting.out[0].combine(split_scaffolds.out.transpose(), by:0), fasta, fai)
+        
+        if(phasings){ bcftools(WhatsHap_phase.out.groupTuple()) }
+        else{ bcftools(freebayes.out) }
+        plot_vcfstats(bcftools.out)
+        
+        WhatsHap_haplotag(sorting.out[0].join(bcftools.out))
+        WhatsHap_split(preprocessing.out.join(WhatsHap_haplotag.out), fasta, fai)
 
         // allele-specific methylation calling
-        MethylDackel(WhatsHap_split.transpose(), fasta, fai, context)
-
-
-    /*
-    emit:
-        bam_variants = sorting.out[1]
-        //bam_clusters = extracting.out[1]
-        khmer_publish = khmer.out
-        kwip_publish = kwip.out
-        clustering_publish = clustering.out
-        vcf_unphased = freebayes.out
-        vcf_filtered = bcftools.out
-        vcf_vcfstats = plot_vcfstats.out
-        
-    */
+        MethylDackel(WhatsHap_split.out.transpose(), fasta, fai, context)
 
 }
 
@@ -234,18 +239,8 @@ workflow {
     main:
         SNPS(BAM, fasta, fai, context)
 
-    /*
-    publish:
-        //SNPS.out.bam_clusters to: "${params.output}/bam/clusters", mode: 'move'
-        SNPS.out.bam_variants to: "${params.output}/bam/variants", mode: 'copy'
-        SNPS.out.khmer_publish to: "${params.output}/hashes", mode: 'copy'
-        SNPS.out.kwip_publish to: "${params.output}", mode: 'copy'
-        SNPS.out.clustering_publish to: "${params.output}", mode: 'move'
-        SNPS.out.vcf_unphased to: "${params.output}/vcf", mode: 'copy'
-        SNPS.out.vcf_vcfstats to: "${params.output}/stats", mode: 'move'
-    */
-
 }
+
 
 
 //////////////////

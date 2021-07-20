@@ -48,7 +48,7 @@ process "masking" {
 
     script:
     """
-    change_sam_queries.py -Q -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam || exit \$?
+    change_sam_queries.py -T ${task.cpus} -t . ${type == "clustering" ? "-G " : ""}${bam} ${type}.bam || exit \$?
     find -mindepth 1 -maxdepth 1 -type d -exec rm -r {} \\;
     """
 }
@@ -208,8 +208,6 @@ process "freebayes" {
 
     maxForks "${params.fork}".toInteger()
 
-    publishDir "${params.output}/vcf", pattern: "${sample}.vcf", mode: 'copy', enabled: true
-
     input:
     tuple val(sample), path(bam), path(bai)
     // eg. [sample, /path/to/sample.bam, /path/to/sample.bam.bai]
@@ -228,7 +226,7 @@ process "freebayes" {
     fasta_generate_regions.py ${fai} ${params.regions} > regions.txt
     freebayes-parallel regions.txt ${task.cpus} -f ${fasta} ${bam} \\
     --strict-vcf --no-partial-observations --report-genotype-likelihood-max --genotype-qualities \\
-    --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} --min-base-quality 1> ${sample}.vcf
+    --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} --min-base-quality 1 > ${sample}.vcf
     """
 }
 
@@ -237,9 +235,11 @@ process "freebayes" {
 // filtering of variants
 process "bcftools" {
 
-    label "${params.high ? "high" : "low"}"
+    label "${params.high ? "mid" : "low"}"
     label "finish"
     tag "$sample"
+
+    publishDir "${params.output}", pattern: "vcf/${sample}.vcf.gz*", mode: 'copy', enabled: true
 
     input:
     tuple val(sample), path(vcf)
@@ -331,8 +331,8 @@ process "split_scaffolds" {
 // read-based haplotype phasing
 process "WhatsHap_phase" {
 
-    label "low"
-    tag "$sample"
+    label "${params.high ? "mid" : "low"}"
+    tag "${sample}:${vcf.baseName}"
 
     input:
     tuple val(sample), path(bam), path(bai), path(vcf)
@@ -341,7 +341,7 @@ process "WhatsHap_phase" {
     path fai
 
     output:
-    tuple val(sample), path("phased/${sample}.vcf")
+    tuple val(sample), path("phased/${vcf}")
     // eg. [sample, /path/to/sample.vcf]
 
     when:
@@ -350,7 +350,7 @@ process "WhatsHap_phase" {
     script:
     """
     mkdir phased
-    whatshap phase -o phased/${sample}.vcf --reference=${fasta} \\
+    whatshap phase -o phased/${vcf} --reference=${fasta} \\
     --tag=PS ${vcf} ${bam} 2> phased/phased.log
     """
 }
@@ -359,7 +359,7 @@ process "WhatsHap_phase" {
 // phased read assignment
 process "WhatsHap_haplotag" {
 
-    label "low"
+    label "${params.high ? "mid" : "low"}"
     tag "$sample"
 
     input:
@@ -385,13 +385,14 @@ process "WhatsHap_haplotag" {
 // split read alignments based on phasing
 process "WhatsHap_split" {
 
-    label "low"
+    label "${params.high ? "mid" : "low"}"
     tag "$sample"
 
     input:
     tuple val(sample), path(bam), path(bai), path(phased)
     // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai, /path/to/phased.list]
     path fasta
+    path fai
 
     output:
     tuple val(sample), path("bam/*.bam")
@@ -412,8 +413,10 @@ process "WhatsHap_split" {
 // allele-specific Methylation calling
 process "MethylDackel" {
 
-    label "low"
+    label "${params.high ? "mid" : "low"}"
     tag "$sample"
+
+    publishDir "${params.output}/bedGraph", mode: 'move', enabled: true
 
     input:
     tuple val(sample), path(bam)
@@ -423,9 +426,9 @@ process "MethylDackel" {
     val context
 
     output:
-    tuple val(sample), path("${sample}/${bam.baseName}/*.bedGraph")
+    tuple val(sample), path("${sample}/*.bedGraph")
     // eg. [sample, [/path/to/*_CpG.bedGraph, ...]]
-    tuple val(sample), path("${sample}/${bam.baseName}/logs/*")
+    tuple val(sample), path("${sample}/logs/*")
     // eg. [sample, [/path/to/logs/*, ...]]
 
     when:
@@ -433,11 +436,11 @@ process "MethylDackel" {
 
     script:
     """
-    mkdir ${sample} ${sample}/${bam.baseName} ${sample}/logs
+    mkdir ${sample} ${sample}/logs
     samtools index ${bam}
 
-    STR=\$(echo \$(MethylDackel mbias ${fasta} ${bam} ${sample}/logs/${bam.baseName} ${context} 2>&1 | cut -d ":" -f2))
-    MethylDackel extract ${fasta} ${bam} ${context} -o ${sample}/${bam.baseName}/ \$STR \\
+    STR=\$(MethylDackel mbias ${fasta} ${bam} ${sample}/logs/${bam.baseName} ${context} 2>&1 | cut -d ":" -f2)
+    MethylDackel extract ${fasta} ${bam} ${context} -o ${sample}/${bam.baseName} \$STR \\
     > ${sample}/logs/${bam.baseName}.err 2>&1
     """
 }
