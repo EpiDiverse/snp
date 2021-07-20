@@ -227,7 +227,8 @@ process "freebayes" {
     """
     fasta_generate_regions.py ${fai} ${params.regions} > regions.txt
     freebayes-parallel regions.txt ${task.cpus} -f ${fasta} ${bam} \\
-    --strict-vcf --no-partial-observations --report-genotype-likelihood-max --genotype-qualities --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} > ${sample}.vcf
+    --strict-vcf --no-partial-observations --report-genotype-likelihood-max --genotype-qualities \\
+    --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} --min-base-quality 1> ${sample}.vcf
     """
 }
 
