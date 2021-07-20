@@ -28,15 +28,15 @@ if(params.help){
 
 
          Options: MODIFIERS
-              --clusters                      Specify a string that corresponds to a group name in the provided "samples.tsv",
-                                          and the pipeline will run DMR comparisons for each group relative to this group.
-                                          Otherwise, the pipeline will run all possible pairwise comparisons if no control
-                                          group is specified. [default: off]
+              --variants                      Specify to enable variant calling from bisulfite sequencing data. If no MODIFIER
+                                          is given, all will run by default. [default: off]
 
-              --variants                      Specify a string that corresponds to a group name in the provided "samples.tsv",
-                                          and the pipeline will run DMR comparisons for each group relative to this group.
-                                          Otherwise, the pipeline will run all possible pairwise comparisons if no control
-                                          group is specified. [default: off]
+              --phase                         Specify to enable phasing of variants from bisulfite sequencing data. This option 
+                                          will also enable --variants. If no MODIFIER is given, all will run by default.
+                                          [default: off]
+
+              --clusters                      Specify to enable sample clustering from bisulfite sequencing data. If no MODIFIER
+                                          is given, all will run by default. [default: off]
 
 
          Options: ADDITIONAL
@@ -68,25 +68,37 @@ if(params.version){
     exit 0
 }
 
-
 // VALIDATE PARAMETERS
 ParameterChecks.checkParams(params)
 
 // DEFINE PATHS
 bam_path = "${params.input}/*.bam"
 
-// conditionals for setting --clusters and --variants
-if( !params.clusters && !params.variants ){
+// conditionals for setting --variants, --phase and --clusters
+if( !params.clusters && !params.phase && !params.variants ){
     variants = true
     clusters = true
+    phasings = true
 } else {
-    variants = params.variants
+    variants = (params.variants || params.phase)
+    phasings = params.phase
     clusters = params.clusters
 }
 
 // check reference
 fasta = file("${params.reference}", checkIfExists: true, glob: false)
 fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
+
+// determine context for ASM
+if ((params.noCpG == true) && (params.noCHH == true) && (params.noCHG == true)) {error "ERROR: please specify methylation context for analysis"}
+else if ((params.noCpG == true) && (params.noCHH == true) && (params.noCHG == false)) {context = "--noCpG --CHG "}
+else if ((params.noCpG == true) && (params.noCHH == false) && (params.noCHG == true)) {context = "--noCpG --CHH "}
+else if ((params.noCpG == true) && (params.noCHH == false) && (params.noCHG == false)) {context = "--noCpG --CHH --CHG "}
+else if ((params.noCpG == false) && (params.noCHH == true) && (params.noCHG == true)) {context = " "}
+else if ((params.noCpG == false) && (params.noCHH == true) && (params.noCHG == false)) {context = "--CHG "}
+else if ((params.noCpG == false) && (params.noCHH == false) && (params.noCHG == true)) {context = "--CHH "}
+else {context = "--CHH --CHG "}
+
 
 // PRINT STANDARD LOGGING INFO
 log.info ""
@@ -99,11 +111,15 @@ else {
 log.info "         ================================================" }
 log.info "         ~ version ${workflow.manifest.version}"
 log.info ""
-log.info "         input dir     : ${params.input}"
-log.info "         reference     : ${params.reference ? "${params.reference}" : "-"}"
-log.info "         output dir    : ${params.output}"
-log.info "         variant calls : ${variants ? "enabled" : "disabled"}"
-log.info "         clustering    : ${clusters ? "enabled" : "disabled"}"
+log.info "         input dir      : ${params.input}"
+log.info "         reference      : ${params.reference ? "${params.reference}" : "-"}"
+log.info "         output dir     : ${params.output}"
+log.info "         clustering     : ${clusters ? "enabled" : "disabled"}"
+log.info "         variant calls  : ${variants ? "enabled" : "disabled"}"
+log.info "         vcf phasing    : ${phasings ? "enabled" : "disabled"}"
+if (phasings) {
+log.info "         asm context(s) : ${params.noCpG ? "" : "CpG " }${params.noCHH ? "" : "CHH " }${params.noCHG ? "" : "CHG" }"
+}
 log.info ""
 log.info "         ================================================"
 log.info "         RUN NAME: ${workflow.runName}"
@@ -160,6 +176,7 @@ workflow 'SNPS' {
         BAM
         fasta
         fai
+        context
  
     main:
         // samtools sort + index
@@ -181,14 +198,19 @@ workflow 'SNPS' {
         // variant calling workflow
         sorting(masking.out.filter{ it[0] == "variants" })
         freebayes(sorting.out[0], fasta, fai)
-        bcftools(freebayes.out)
+        if (phasings) { bcftools(WhatsHap_phase.out.groupTuple()) }
+        else { bcftools(freebayes.out) }
         plot_vcfstats(bcftools.out)
 
-        // haplotyping workflow
-        //extractHAIRS(sorting.out.combine(freebayes.out, by: 0))
-        //HAPCUT2(extractHAIRS.out.combine(freebayes.out, by: 0))
-        //bamsplit(sorting.out.combine(HAPCUT2.out, by: 0))
-        //MethylDackel(bamsplit.out.transpose())
+        // haplotyping workflow (read-based)
+        split_scaffolds(freebayes.out)
+        WhatsHap_phase(masking.out.filter{ it[0] == "variants" }.map{ it.tail() }.combine(split_scaffolds.out.transpose(), by:0))
+        WhatsHap_haplotag(masking.out.filter{ it[0] == "variants" }.map{ it.tail() }.join(bcftools.out))
+        WhatsHap_split(preprocessing.out.join(WhatsHap_haplotag.out))
+
+        // allele-specific methylation calling
+        MethylDackel(WhatsHap_split.transpose(), fasta, fai, context)
+
 
     /*
     emit:
@@ -201,9 +223,6 @@ workflow 'SNPS' {
         vcf_filtered = bcftools.out
         vcf_vcfstats = plot_vcfstats.out
         
-        //vcf_phased = HAPCUT2.out
-        //bam_haplotypes = bamsplit.out
-        //bedGraphs = MethylDackel.out
     */
 
 }
@@ -213,7 +232,7 @@ workflow 'SNPS' {
 workflow {
 
     main:
-        SNPS(BAM, fasta, fai)
+        SNPS(BAM, fasta, fai, context)
 
     /*
     publish:

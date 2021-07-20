@@ -17,7 +17,7 @@ process "preprocessing" {
 
     output:
     tuple val(sample), path("calmd.bam"), path("calmd.bam.bai")
-    // eg. [sample, [/path/to/calmd.bam, /path/to/calmd.bam.bai]]
+    // eg. [sample, /path/to/calmd.bam, /path/to/calmd.bam.bai]
 
     script:
     """
@@ -75,7 +75,7 @@ process "extracting" {
     //path "${sample}.bam"
 
     when:
-    params.clusters || (!params.variants && !params.clusters)
+    params.clusters || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
@@ -106,7 +106,7 @@ process "khmer" {
     // eg. [/path/to/sample.ct.gz]
 
     when:
-    params.clusters || (!params.variants && !params.clusters)
+    params.clusters || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
@@ -132,7 +132,7 @@ process "kwip" {
     // eg. [/path/to/kern.txt, /path/to/dist.txt]
 
     when:
-    params.clusters || (!params.variants && !params.clusters)
+    params.clusters || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
@@ -157,7 +157,7 @@ process "clustering" {
     path "*.pdf"
 
     when:
-    params.clusters || (!params.variants && !params.clusters)
+    params.clusters || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
@@ -188,7 +188,7 @@ process "sorting" {
     path "${sample}.bam"
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
@@ -221,13 +221,13 @@ process "freebayes" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
     fasta_generate_regions.py ${fai} ${params.regions} > regions.txt
     freebayes-parallel regions.txt ${task.cpus} -f ${fasta} ${bam} \\
-    --no-partial-observations --report-genotype-likelihood-max --genotype-qualities --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} > ${sample}.vcf
+    --strict-vcf --no-partial-observations --report-genotype-likelihood-max --genotype-qualities --min-repeat-entropy ${params.entropy} --min-coverage ${params.coverage} > ${sample}.vcf
     """
 }
 
@@ -241,22 +241,32 @@ process "bcftools" {
     tag "$sample"
 
     input:
-    tuple val(sample), path("raw.vcf")
+    tuple val(sample), path(vcf)
     // eg. [sample, /path/to/raw.vcf]
+    // eg. [sample, [/path/to/scaffold1.vcf, /path/to/scaffold1.vcf, ...]]
+
 
     output:
-    tuple val(sample), path("${sample}.vcf.gz")
-    // eg. [sample, /path/to/sample.bcf]
+    tuple val(sample), path("vcf/${sample}.vcf.gz"), path("vcf/${sample}.vcf.gz.tbi")
+    // eg. [sample, /path/to/sample.vcf.gz, /path/to/sample.vcf.gz.tbi]
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
-    """
-    #bcftools view -Ob${params.ploidy ? " --max-alleles ${params.ploidy}" : ""} raw.vcf > ${sample}.bcf
-    #bcftools view -Ob raw.vcf > ${sample}.bcf
-    bcftools view -Oz raw.vcf > ${sample}.vcf.gz
-    """
+    if (params.phase || (!params.variants && !params.phase && !params.clusters))
+        """
+        mkdir vcf
+        bcftools concat -Oz ${vcf} > vcf/${sample}.vcf.gz
+        tabix vcf/${sample}.vcf.gz
+        """
+    else
+        """
+        mkdir vcf
+        bcftools view -Oz ${vcf} > vcf/${sample}.vcf.gz
+        tabix vcf/${sample}.vcf.gz
+        """
+
 }
 
 
@@ -270,94 +280,130 @@ process "plot_vcfstats" {
     publishDir "${params.output}/stats", pattern: "${sample}/*", mode: 'move', enabled: true
 
     input:
-    tuple val(sample), path(bcf)
-    // eg. [sample, /path/to/sample.bcf]
+    tuple val(sample), path(vcf), path(tabix)
+    // eg. [sample, /path/to/sample.vcf.gz, /path/to/sample.vcf.gz.tbi]
 
     output:
     path "${sample}/*"
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
     mkdir ${sample}
-    bcftools stats ${bcf} > ${sample}/${bcf}.stats || exit \$?
-    plot-vcfstats -P -p ${sample} ${sample}/${bcf}.stats
+    bcftools stats ${vcf} > ${sample}/${vcf}.stats || exit \$?
+    plot-vcfstats -P -p ${sample} ${sample}/${vcf}.stats
     """
 }
 
 
-// preprocessing for haplotype phasing
-process "extractHAIRS" {
+// split scaffolds for parallel execution of haplotype phasing
+process "split_scaffolds" {
+
+    label "low"
+    tag "$sample"
+
+    input:
+    tuple val(sample), path(vcf)
+    // eg. [sample, /path/to/sample.vcf]
+
+    output:
+    tuple val(sample), path("scaffolds/*.vcf")
+    // eg. [sample, [/path/to/scaffold1.vcf, /path/to/scaffold2.vcf, ...]]
+
+    when:
+    params.phase || (!params.variants && !params.phase && !params.clusters)
+
+    script:
+    """
+    mkdir scaffolds
+    bcftools view -H ${vcf} | cut -f1 | sort | uniq | while read line;
+    do bcftools view -h ${vcf} > scaffolds/\${line}.vcf
+    bcftools view -H ${vcf} | awk -F "\\t" -v line="\$line" 'BEGIN{OFS="\\t"} \$1==line' >> scaffolds/\${line}.vcf;
+    done 
+    """
+}
+
+
+
+// read-based haplotype phasing
+process "WhatsHap_phase" {
 
     label "low"
     tag "$sample"
 
     input:
     tuple val(sample), path(bam), path(bai), path(vcf)
-    // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai, /path/to/sample.vcf]
+    // eg. [sample, /path/to/masked.bam, /path/to/masked.bam.bai, /path/to/sample.vcf]
+    path fasta
+    path fai
 
     output:
-    tuple val(sample), path("${sample}.txt")
-    // eg. [sample, /path/to/sample.txt]
-
-    when:
-    params.variants || (!params.variants && !params.clusters)
-
-    script:
-    """
-    extractHAIRS --bam ${bam} --VCF ${vcf} --out ${sample}.txt
-    """
-}
-
-
-// diploid haplotype phasing
-process "HAPCUT2" {
-
-    label "low"
-    tag "$sample"
-
-    input:
-    tuple val(sample), path(txt), path(vcf)
-    // eg. [sample, /path/to/sample.txt, /path/to/sample.vcf]
-
-    output:
-    tuple val(sample), path("phased.${sample}.vcf")
+    tuple val(sample), path("phased/${sample}.vcf")
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
-    HAPCUT2 --fragments ${txt} --VCF ${vcf} --output phased.${sample}.vcf
+    mkdir phased
+    whatshap phase -o phased/${sample}.vcf --reference=${fasta} \\
+    --tag=PS ${vcf} ${bam} 2> phased/phased.log
     """
 }
 
 
-// split alignments based on haplotype phasing
-process "bamsplit" {
+// phased read assignment
+process "WhatsHap_haplotag" {
 
     label "low"
     tag "$sample"
 
     input:
-    tuple val(sample), path(bam), path(bai), path(vcf)
-    // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai, /path/to/phased.vcf]
+    tuple val(sample), path(bam), path(bai), path(vcf), path(tabix)
+    // eg. [sample, /path/to/masked.bam, /path/to/masked.bam.bai, /path/to/sample.vcf.gz, /path/to/sample.vcf.gz.tbi]
+
+    output:
+    tuple val(sample), path("phased/phased.list")
+    // eg. [sample, /path/to/phased.list]
+
+    when:
+    params.phase || (!params.variants && !params.phase && !params.clusters)
+
+    script:
+    """
+    mkdir phased
+    whatshap haplotag --ignore-read-groups --output-haplotag-list phased/phased.list \\
+    -o phased/phased.bam ${vcf} ${bam}
+    """
+}
+
+
+// split read alignments based on phasing
+process "WhatsHap_split" {
+
+    label "low"
+    tag "$sample"
+
+    input:
+    tuple val(sample), path(bam), path(bai), path(phased)
+    // eg. [sample, /path/to/sorted.bam, /path/to/sorted.bam.bai, /path/to/phased.list]
     path fasta
 
     output:
     tuple val(sample), path("bam/*.bam")
-    // eg. [sample, [/path/to/*.bam, ...]]
+    // eg. [sample, [/path/to/phased/*.bam, ...]]
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
     mkdir bam
-    bamsplit.py --ref ${fasta} --reads ${bam} --variants ${vcf} --out_dir bam --ploidy ${params.ploidy}${params.region ? "" : " --region ${params.region}"}
+    whatshap split --output-h1 bam/HP1.sam --output-h2 bam/HP2.sam ${bam} ${phased}
+    echo -e "HP1\\nHP2" | xargs -n1 -P2 -i sh -c "samtools view -Sb bam/'{}'.sam > bam/'{}'.bam"
     """
 }
 
@@ -372,6 +418,7 @@ process "MethylDackel" {
     tuple val(sample), path(bam)
     // eg. [sample, /path/to/haplotype.bam]
     path fasta
+    path fai
     val context
 
     output:
@@ -381,7 +428,7 @@ process "MethylDackel" {
     // eg. [sample, [/path/to/logs/*, ...]]
 
     when:
-    params.variants || (!params.variants && !params.clusters)
+    params.phase || (!params.variants && !params.phase && !params.clusters)
 
     script:
     """
