@@ -38,6 +38,8 @@ process "masking" {
 
     maxForks "${params.fork}".toInteger()
 
+    publishDir "${params.output}/bam", pattern: "${type}.bam", saveAs: {filename -> "${sample}.bam"}, mode: 'move', enabled: (!params.clusters && !params.variants && !params.phase)
+
     input:
     tuple val(type), val(sample), path(bam), path(bai)
     // eg. [clustering, sample, /path/to/sample.bam, /path/to/sample.bam.bai]
@@ -75,7 +77,7 @@ process "extracting" {
     //path "${sample}.bam"
 
     when:
-    params.clusters || (!params.variants && !params.phase && !params.clusters)
+    params.clusters
 
     script:
     """
@@ -106,7 +108,7 @@ process "khmer" {
     // eg. [/path/to/sample.ct.gz]
 
     when:
-    params.clusters || (!params.variants && !params.phase && !params.clusters)
+    params.clusters
 
     script:
     """
@@ -132,7 +134,7 @@ process "kwip" {
     // eg. [/path/to/kern.txt, /path/to/dist.txt]
 
     when:
-    params.clusters || (!params.variants && !params.phase && !params.clusters)
+    params.clusters
 
     script:
     """
@@ -157,7 +159,7 @@ process "clustering" {
     path "*.pdf"
 
     when:
-    params.clusters || (!params.variants && !params.phase && !params.clusters)
+    params.clusters
 
     script:
     """
@@ -188,7 +190,7 @@ process "sorting" {
     path "${sample}.bam"
 
     when:
-    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.variants || params.phase
 
     script:
     """
@@ -219,7 +221,7 @@ process "freebayes" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.variants || params.phase
 
     script:
     """
@@ -252,10 +254,10 @@ process "bcftools" {
     // eg. [sample, /path/to/sample.vcf.gz, /path/to/sample.vcf.gz.tbi]
 
     when:
-    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.variants || params.phase
 
     script:
-    if (params.phase || (!params.variants && !params.phase && !params.clusters))
+    if (params.phase)
         """
         mkdir vcf
         bcftools concat -Oz ${vcf} > vcf/${sample}.vcf.gz
@@ -288,7 +290,7 @@ process "plot_vcfstats" {
     path "${sample}/*"
 
     when:
-    params.variants || params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.variants || params.phase
 
     script:
     """
@@ -314,7 +316,7 @@ process "split_scaffolds" {
     // eg. [sample, [/path/to/scaffold1.vcf, /path/to/scaffold2.vcf, ...]]
 
     when:
-    params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.phase
 
     script:
     """
@@ -345,7 +347,7 @@ process "WhatsHap_phase" {
     // eg. [sample, /path/to/sample.vcf]
 
     when:
-    params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.phase
 
     script:
     """
@@ -371,7 +373,7 @@ process "WhatsHap_haplotag" {
     // eg. [sample, /path/to/phased.list]
 
     when:
-    params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.phase
 
     script:
     """
@@ -399,7 +401,7 @@ process "WhatsHap_split" {
     // eg. [sample, [/path/to/phased/*.bam, ...]]
 
     when:
-    params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.phase
 
     script:
     """
@@ -432,7 +434,7 @@ process "MethylDackel" {
     // eg. [sample, [/path/to/logs/*, ...]]
 
     when:
-    params.phase || (!params.variants && !params.phase && !params.clusters)
+    params.phase
 
     script:
     """

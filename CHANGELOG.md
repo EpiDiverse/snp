@@ -2,6 +2,12 @@
 ---
 # Releases
 
+## v1.1 - 
+* Updated documentation
+* Minor fixes
+* Refactor default mode to run masking only unless `--variants`, `--clusters`, or `--phase` are specified
+* Experimental implementation of phasing / ASM workflow
+
 ## v1.0 - 
 * Update to Nextflow 20.07.1 syntax
 * Updated documentation

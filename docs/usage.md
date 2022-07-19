@@ -63,11 +63,13 @@ A string that will be used as the name for the output results directory, which w
 
 ## Modifiers
 
+If neither of the following two options are specified, the pipeline will run only the double-masking procedure and provide output bam files. 
+
 ### `--variants`
-Run pipeline in variant calling mode. Disables clustering mode unless also specified. If neither mode is specified then both will run [default: off]
+Run pipeline in variant calling mode. [default: off]
 
 ### `--clusters`
-Run pipeline in clustering mode. Disables variant calling mode unless also specified. If neither mode is specified then both will run [default: off]
+Run pipeline in clustering mode. [default: off]
 
 
 ## Variant Calling 

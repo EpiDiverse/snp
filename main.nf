@@ -28,22 +28,19 @@ if(params.help){
 
 
          Options: MODIFIERS
-              --variants                      Specify to enable variant calling from bisulfite sequencing data. If no MODIFIER
-                                          is given, all will run by default. [default: off]
+              --clusters                      Specify to enable sample clustering from bisulfite sequencing data. [default: off]
+
+              --variants                      Specify to enable variant calling from bisulfite sequencing data. [default: off]
 
               --phase                         Specify to enable phasing of variants from bisulfite sequencing data. This option 
-                                          will also enable --variants. If no MODIFIER is given, all will run by default.
-                                          [default: off]
-
-              --clusters                      Specify to enable sample clustering from bisulfite sequencing data. If no MODIFIER
-                                          is given, all will run by default. [default: off]
+                                          will also enable --variants. [default: off]
 
 
          Options: ADDITIONAL
               --help                          Display this help information and exit
               --version                       Display the current pipeline version and exit
               --debug                         Run the pipeline in debug mode    
-
+              --take [INT]                    Limit analysis of input samples to INT. [default: 10]
 
          Example: 
               nextflow run epidiverse/snp \
@@ -75,15 +72,10 @@ ParameterChecks.checkParams(params)
 bam_path = "${params.input}/*.bam"
 
 // conditionals for setting --variants, --phase and --clusters
-if( !params.clusters && !params.phase && !params.variants ){
-    variants = true
-    clusters = true
-    phasings = true
-} else {
-    variants = (params.variants || params.phase)
-    phasings = params.phase
-    clusters = params.clusters
-}
+variants = (params.variants || params.phase)
+phasings = params.phase
+clusters = params.clusters
+
 
 // check reference
 fasta = file("${params.reference}", checkIfExists: true, glob: false)
@@ -186,14 +178,13 @@ include {
 
 // WORKFLOWS
 
-// WGBS workflow - primary pipeline
+// SNPS workflow - primary pipeline
 workflow 'SNPS' {
 
     take:
         BAM
         fasta
         fai
-        context
  
     main:
         // samtools sort + index
@@ -201,7 +192,7 @@ workflow 'SNPS' {
 
         // fork preprocessing.out for clustering and variant calling workflows
         cluster_channel = clusters ? preprocessing.out.map{tuple("clustering", *it)} : Channel.empty()
-        variant_channel = variants ? preprocessing.out.map{tuple("variants", *it)} : Channel.empty()
+        variant_channel = variants || (!params.variants && !params.clusters && !params.phase) ? preprocessing.out.map{tuple("variants", *it)} : Channel.empty()
 
         // position masking
         masking(cluster_channel.mix(variant_channel))
@@ -215,17 +206,40 @@ workflow 'SNPS' {
         // variant calling workflow
         sorting(masking.out.filter{ it[0] == "variants" })
         freebayes(sorting.out[0], fasta, fai)
-
-        // haplotyping workflow (read-based)
-        split_scaffolds(freebayes.out)
-        WhatsHap_phase(sorting.out[0].combine(split_scaffolds.out.transpose(), by:0), fasta, fai)
         
-        if(phasings){ bcftools(WhatsHap_phase.out.groupTuple()) }
-        else{ bcftools(freebayes.out) }
+        if(!phasings){ 
+        bcftools(freebayes.out)
+        plot_vcfstats(bcftools.out) }
+
+    emit:
+        preprocessing_out = preprocessing.out
+        sorting_out = sorting.out[0]
+        freebayes_out = freebayes.out
+
+}
+
+
+// ASM workflow - secondary pipeline
+workflow 'ASM' {
+
+    take:
+        preprocessing_out
+        sorting_out
+        freebayes_out
+        fasta
+        fai
+        context
+ 
+    main:
+        // haplotyping workflow (read-based)
+        split_scaffolds(freebayes_out)
+        WhatsHap_phase(sorting_out.combine(split_scaffolds.out.transpose(), by:0), fasta, fai)
+        
+        bcftools(WhatsHap_phase.out.groupTuple())
         plot_vcfstats(bcftools.out)
         
-        WhatsHap_haplotag(sorting.out[0].join(bcftools.out))
-        WhatsHap_split(preprocessing.out.join(WhatsHap_haplotag.out), fasta, fai)
+        WhatsHap_haplotag(sorting_out.join(bcftools.out))
+        WhatsHap_split(preprocessing_out.join(WhatsHap_haplotag.out), fasta, fai)
 
         // allele-specific methylation calling
         MethylDackel(WhatsHap_split.out.transpose(), fasta, fai, context)
@@ -237,7 +251,8 @@ workflow 'SNPS' {
 workflow {
 
     main:
-        SNPS(BAM, fasta, fai, context)
+        SNPS(BAM, fasta, fai)
+        if(phasings){ ASM(SNPS.out.preprocessing_out, SNPS.out.sorting_out, SNPS.out.freebayes_out, fasta, fai, context) }
 
 }
 
