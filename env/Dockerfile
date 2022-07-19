@@ -5,4 +5,4 @@ LABEL authors="Adam Nunn" \
 
 COPY environment.yml /
 RUN conda env create -f /environment.yml && conda clean -a
-ENV PATH /opt/conda/envs/snp/bin:$PATH
+ENV PATH /opt/conda/envs/snps/bin:$PATH

@@ -25,13 +25,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 2. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
 
-3. Download the pipeline and test it on a minimal dataset with a single command
-
-```bash
-NXF_VER=20.07.1 nextflow run epidiverse/snp -profile test,<docker|singularity|conda>
-```
-
-4. Start running your own analysis!
+3. Start running your own analysis!
 
 ```bash
 NXF_VER=20.07.1 nextflow run epidiverse/snp -profile <docker|singularity|conda> \
@@ -40,18 +34,27 @@ NXF_VER=20.07.1 nextflow run epidiverse/snp -profile <docker|singularity|conda> 
 
 > See the [usage documentation](docs/usage.md) for all of the available options when running the pipeline.
 
-### Wiki Documentation
+### Test data
 
-The EpiDiverse/snp pipeline is part of the [EpiDiverse Toolkit](https://app.gitbook.com/@epidiverse/s/project/epidiverse-pipelines/overview), a best practice suite of tools intended for the study of [Ecological Plant Epigenetics](https://app.gitbook.com/@epidiverse/s/project/). Links to general guidelines and pipeline-specific documentation can be found below:
+A minimal example dataset for testing purposes can be found in the [EpiDiverse/datasets](https://github.com/EpiDiverse/datasets/tree/snp) repository. You can either download the files manually and run the pipeline above as intended, or you can directly run the pipeline using the test profile option which will automatically download the data for you:
 
-1. [Installation](https://app.gitbook.com/@epidiverse/s/project/epidiverse-pipelines/installation)
+```bash
+NXF_VER=20.07.1 nextflow run epidiverse/snp -profile test,<docker|singularity|conda>
+```
+
+## Wiki Documentation
+
+The EpiDiverse/snp pipeline is part of the [EpiDiverse Toolkit](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/epidiverse-pipelines/best-practice-pipelines), a best practice suite of tools intended for the study of [Ecological Plant Epigenetics](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/). Links to general guidelines and pipeline-specific documentation can be found below:
+
+1. [Installation](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/epidiverse-pipelines/installation#1-install-nextflow)
 2. Pipeline configuration
-    * [Local installation](https://app.gitbook.com/@epidiverse/s/project/epidiverse-pipelines/installation#2-install-the-pipeline)
-    * [Adding your own system config](https://app.gitbook.com/@epidiverse/s/project/epidiverse-pipelines/installation#3-pipeline-configuration)
-    * [EpiDiverse infrastructure](https://app.gitbook.com/@epidiverse/s/project/epidiverse-pipelines/installation#appendices)
+    * [Local installation](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/epidiverse-pipelines/installation#2-install-the-pipeline)
+    * [Adding your own system config](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/epidiverse-pipelines/installation#3-pipeline-configuration)
+    * [EpiDiverse infrastructure](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/epidiverse-pipelines/installation#appendices)
 3. [Running the pipeline](docs/usage.md)
 4. [Understanding the results](docs/output.md)
-5. [Troubleshooting](https://app.gitbook.com/@epidiverse/s/project/epidiverse-pipelines/troubleshooting)
+5. [Runtime and memory usage guidelines](docs/runtime.md)
+6. [Troubleshooting](https://epidiverse.gitbook.io/project/-MfxkdBDZggX_vc_sG5l/epidiverse-pipelines/troubleshooting)
 
 ### Credits
 
