@@ -38,7 +38,8 @@ process "masking" {
 
     maxForks "${params.fork}".toInteger()
 
-    publishDir "${params.output}/bam", pattern: "${type}.bam", saveAs: {filename -> "${sample}.bam"}, mode: 'move', enabled: (!params.clusters && !params.variants && !params.phase)
+    //publishDir "${params.output}/bam", pattern: "${type}.bam", saveAs: {filename -> "${sample}.bam"}, mode: 'move', enabled: (!params.clusters && !params.variants && !params.phase)
+    publishDir "${params.output}/bam/", pattern: "${type}.bam", saveAs: {type == "clustering" ? "clusters/${sample}.bam" : "${sample}.bam"}, mode: 'copy', enabled: params.keepBams || (!params.clusters && !params.variants && !params.phase)
 
     input:
     tuple val(type), val(sample), path(bam), path(bai)
@@ -65,7 +66,7 @@ process "extracting" {
 
     maxForks "${params.fork}".toInteger()
 
-    publishDir "${params.output}/bam/clusters", mode: 'copy', enabled: true
+    publishDir "${params.output}/fastq", mode: 'copy', enabled: params.keepReads
 
     input:
     tuple val(type), val(sample), path(bam)
@@ -178,7 +179,7 @@ process "sorting" {
 
     maxForks "${params.fork}".toInteger()
 
-    publishDir "${params.output}/bam/variants", pattern: "${sample}.bam", mode: 'copy', enabled: true
+    //publishDir "${params.output}/bam/variants", pattern: "${sample}.bam", mode: 'copy', enabled: true
 
     input:
     tuple val(type), val(sample), path(bam)
