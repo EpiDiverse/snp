@@ -297,7 +297,7 @@ process "plot_vcfstats" {
     """
     mkdir ${sample}
     bcftools stats ${vcf} > ${sample}/${vcf}.stats || exit \$?
-    plot-vcfstats -P -p ${sample} ${sample}/${vcf}.stats
+    plot-vcfstats -t ${sample} -P -p ${sample} ${sample}/${vcf}.stats
     """
 }
 
